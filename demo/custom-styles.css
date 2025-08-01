@@ -1,0 +1,370 @@
+/* Custom styles extracted from Tailwind config */
+
+/* Global font family */
+body {
+  font-family: "SUIT", "SUIT-REGULAR", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Colors */
+:root {
+  --color-primary: #0075ff;
+  --color-primary-10: #e5f1ff;
+  --color-primary-dark: #318fff;
+  --color-critical: #ff4545;
+  --color-major: #fdb541;
+  --color-minor: #fcdb2c;
+  --color-warning: #61d866;
+  --color-manage: #46cdd0;
+  --color-breakdown: #9f47f5;
+
+  /* Grayscale */
+  --color-grayscale-100: #000000;
+  --color-grayscale-200: #333333;
+  --color-grayscale-300: #666666;
+  --color-grayscale-400: #999999;
+  --color-grayscale-500: #cccccc;
+  --color-grayscale-600: #dddddd;
+  --color-grayscale-700: #eeeeee;
+  --color-grayscale-800: #f5f5f5;
+  --color-grayscale-900: #f8f8f8;
+  --color-grayscale-1000: #ffffff;
+
+  /* Dark mode grayscale */
+  --color-dark-grayscale-100: #ffffff;
+  --color-dark-grayscale-200: rgba(255, 255, 255, 0.87);
+  --color-dark-grayscale-300: rgba(255, 255, 255, 0.6);
+  --color-dark-grayscale-400: rgba(255, 255, 255, 0.38);
+  --color-dark-grayscale-500: rgba(255, 255, 255, 0.2);
+  --color-dark-grayscale-600: rgba(255, 255, 255, 0.12);
+  --color-dark-grayscale-700: rgba(255, 255, 255, 0.08);
+  --color-dark-grayscale-800: rgba(255, 255, 255, 0.05);
+  --color-dark-grayscale-900: #222222;
+
+  --color-dark-bg-333: #333333;
+  --color-dark-bg-444: #444444;
+}
+
+/* Grayscale color classes */
+.text-grayscale-100 {
+  color: var(--color-grayscale-100);
+}
+.text-grayscale-200 {
+  color: var(--color-grayscale-200);
+}
+.text-grayscale-300 {
+  color: var(--color-grayscale-300);
+}
+.text-grayscale-400 {
+  color: var(--color-grayscale-400);
+}
+.text-grayscale-500 {
+  color: var(--color-grayscale-500);
+}
+.text-grayscale-600 {
+  color: var(--color-grayscale-600);
+}
+.text-grayscale-700 {
+  color: var(--color-grayscale-700);
+}
+.text-grayscale-800 {
+  color: var(--color-grayscale-800);
+}
+.text-grayscale-900 {
+  color: var(--color-grayscale-900);
+}
+.text-grayscale-1000 {
+  color: var(--color-grayscale-1000);
+}
+
+.bg-grayscale-100 {
+  background-color: var(--color-grayscale-100);
+}
+.bg-grayscale-200 {
+  background-color: var(--color-grayscale-200);
+}
+.bg-grayscale-300 {
+  background-color: var(--color-grayscale-300);
+}
+.bg-grayscale-400 {
+  background-color: var(--color-grayscale-400);
+}
+.bg-grayscale-500 {
+  background-color: var(--color-grayscale-500);
+}
+.bg-grayscale-600 {
+  background-color: var(--color-grayscale-600);
+}
+.bg-grayscale-700 {
+  background-color: var(--color-grayscale-700);
+}
+.bg-grayscale-800 {
+  background-color: var(--color-grayscale-800);
+}
+.bg-grayscale-900 {
+  background-color: var(--color-grayscale-900);
+}
+.bg-grayscale-1000 {
+  background-color: var(--color-grayscale-1000);
+}
+
+.stroke-grayscale-300 {
+  stroke: var(--color-grayscale-300);
+}
+.stroke-grayscale-600 {
+  stroke: var(--color-grayscale-600);
+}
+
+/* Dark mode grayscale classes */
+.dark .text-dark-grayscale-100 {
+  color: var(--color-dark-grayscale-100);
+}
+.dark .text-dark-grayscale-200 {
+  color: var(--color-dark-grayscale-200);
+}
+.dark .text-dark-grayscale-300 {
+  color: var(--color-dark-grayscale-300);
+}
+.dark .text-dark-grayscale-400 {
+  color: var(--color-dark-grayscale-400);
+}
+.dark .text-dark-grayscale-500 {
+  color: var(--color-dark-grayscale-500);
+}
+.dark .text-dark-grayscale-600 {
+  color: var(--color-dark-grayscale-600);
+}
+.dark .text-dark-grayscale-700 {
+  color: var(--color-dark-grayscale-700);
+}
+.dark .text-dark-grayscale-800 {
+  color: var(--color-dark-grayscale-800);
+}
+.dark .text-dark-grayscale-900 {
+  color: var(--color-dark-grayscale-900);
+}
+
+.dark .bg-dark-bg-333 {
+  background-color: var(--color-dark-bg-333);
+}
+.dark .bg-dark-bg-444 {
+  background-color: var(--color-dark-bg-444);
+}
+
+.dark .stroke-dark-grayscale-300 {
+  stroke: var(--color-dark-grayscale-300);
+}
+
+/* Custom spacing classes */
+.h-13 {
+  height: 3.25rem;
+}
+.min-h-16 {
+  min-height: 4rem;
+}
+.max-h-16 {
+  max-height: 4rem;
+}
+
+/* Custom animations */
+@keyframes alarm-ping {
+  70%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-alarm-ping {
+  animation: alarm-ping 1.2s cubic-bezier(0, 0, 0.3, 0.4) infinite alternate;
+}
+
+.animate-ripple {
+  animation: ripple 1.5s infinite ease-out;
+}
+
+/* Override gray-600 globally */
+.text-gray-600 {
+  color: #dddddd !important;
+}
+
+/* Primary color classes */
+.text-primary {
+  color: var(--color-primary);
+}
+.bg-primary {
+  background-color: var(--color-primary);
+}
+.bg-primary-10 {
+  background-color: var(--color-primary-10);
+}
+
+/* Status color classes */
+.text-critical {
+  color: var(--color-critical);
+}
+.bg-critical {
+  background-color: var(--color-critical);
+}
+.text-major {
+  color: var(--color-major);
+}
+.bg-major {
+  background-color: var(--color-major);
+}
+.text-minor {
+  color: var(--color-minor);
+}
+.bg-minor {
+  background-color: var(--color-minor);
+}
+.text-warning {
+  color: var(--color-warning);
+}
+.bg-warning {
+  background-color: var(--color-warning);
+}
+
+/* Additional utility classes */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Aspect ratio */
+.aspect-square {
+  aspect-ratio: 1 / 1;
+}
+
+/* Font sizes */
+.text-title-xxl {
+  font-size: 44px;
+  line-height: 55px;
+}
+.text-title-xl {
+  font-size: 36px;
+  line-height: 45px;
+}
+.text-title-xl2 {
+  font-size: 33px;
+  line-height: 45px;
+}
+.text-title-lg {
+  font-size: 28px;
+  line-height: 35px;
+}
+.text-title-md {
+  font-size: 24px;
+  line-height: 30px;
+}
+.text-title-md2 {
+  font-size: 26px;
+  line-height: 30px;
+}
+.text-title-sm {
+  font-size: 20px;
+  line-height: 26px;
+}
+.text-title-xsm {
+  font-size: 18px;
+  line-height: 24px;
+}
+
+/* Custom shadow classes */
+.shadow-2 {
+  --tw-shadow: 0px 1px 4px rgba(0, 0, 0, 0.12);
+  --tw-shadow-colored: 0px 1px 4px var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+
+/* Sidebar item classes - 상용 서비스와 동일한 스타일 */
+.sidebar-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 48px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  padding: 12px;
+  gap: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+  font-family: "SUIT-REGULAR", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+  color: var(--color-grayscale-100);
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  transition-property: background-color, color;
+}
+
+.sidebar-item:hover {
+  background-color: var(--color-grayscale-800);
+}
+
+.active-sidebar-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 48px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  padding: 12px;
+  gap: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+  font-family: "SUIT-REGULAR", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+  background-color: rgb(229, 241, 255);
+  color: rgb(0, 117, 255);
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  transition-property: background-color, color;
+}
+
+.active-sidebar-item:hover {
+  background-color: rgb(229, 241, 255);
+  color: rgb(0, 117, 255);
+}
+
+/* 하위 메뉴 아이템용 (text-base 클래스와 함께 사용) */
+.sidebar-item.text-base {
+  font-size: 16px;
+  height: 40px;
+  padding: 8px 12px;
+}
