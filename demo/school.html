@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart School Integrated Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="./custom-styles.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -101,6 +102,27 @@
         overflow: hidden;
         transition: max-height 0.3s ease-in-out;
       }
+
+      /* Modal styles for printing */
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .printable-area,
+        .printable-area * {
+          visibility: visible;
+        }
+        .printable-area {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        .modal-header,
+        .modal-footer {
+          display: none !important;
+        }
+      }
     </style>
   </head>
   <body class="bg-[#f8f8f8]">
@@ -143,7 +165,11 @@
             </svg>
           </button>
           <a class="block" href="#/">
-            <img src="../logo-nav.png" alt="Logo" class="max-h-16 w-auto" />
+            <img
+              src="../assets/logo-nav.png"
+              alt="Logo"
+              class="max-h-16 w-auto"
+            />
           </a>
           <div
             class="hidden line-clamp-1 w-fit whitespace-nowrap text-2xl font-bold text-gray-800"
@@ -743,13 +769,78 @@
                   </div>
                 </div>
               </div>
-              <!-- Monthly Event Chart -->
-              <div class="mt-6 p-6 bg-white rounded-lg shadow">
-                <h3 class="text-lg font-semibold text-gray-800">
-                  Monthly Event Trends
-                </h3>
-                <div class="h-64 mt-4">
-                  <canvas id="monthlyEventChart"></canvas>
+              <!-- Quick Controls & Monthly Chart -->
+              <div class="grid grid-cols-1 gap-6 mt-6 lg:grid-cols-2">
+                <div class="p-6 bg-white rounded-lg shadow">
+                  <h3 class="text-lg font-semibold text-gray-800">
+                    Quick Controls
+                  </h3>
+                  <div class="grid grid-cols-2 gap-4 mt-4">
+                    <button
+                      class="flex flex-col items-center justify-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
+                    >
+                      <svg
+                        class="w-8 h-8 text-blue-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.636 5.636a9 9 0 0112.728 0M18.364 18.364A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                        ></path>
+                      </svg>
+                      <span class="mt-2 text-sm font-semibold text-blue-800"
+                        >Global Ventilation</span
+                      >
+                    </button>
+                    <button
+                      class="flex flex-col items-center justify-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition"
+                    >
+                      <img 
+                        src="../assets/megaphone.svg" 
+                        alt="Megaphone" 
+                        class="w-8 h-8"
+                        style="filter: invert(24%) sepia(70%) saturate(7485%) hue-rotate(351deg) brightness(91%) contrast(93%);"
+                      />
+                      <span class="mt-2 text-sm font-semibold text-red-800"
+                        >Emergency Broadcast</span
+                      >
+                    </button>
+                    <button
+                      id="comprehensive-report-btn"
+                      class="flex flex-col items-center justify-center p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                    >
+                      <svg
+                        class="w-8 h-8 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        ></path>
+                      </svg>
+                      <span class="mt-2 text-sm font-semibold text-gray-800"
+                        >Generate Comprehensive Report</span
+                      >
+                    </button>
+                  </div>
+                </div>
+                <div class="p-6 bg-white rounded-lg shadow">
+                  <h3 class="text-lg font-semibold text-gray-800">
+                    Monthly Event Trends
+                  </h3>
+                  <div class="h-48 mt-4">
+                    <canvas id="monthlyEventChart"></canvas>
+                  </div>
                 </div>
               </div>
             </div>
@@ -950,6 +1041,7 @@
                   <div class="bg-white p-6 rounded-lg shadow">
                     <h3 class="text-lg font-semibold text-gray-800">Reports</h3>
                     <button
+                      id="download-report-btn"
                       class="w-full mt-4 py-2 px-4 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700"
                     >
                       Download Monthly Report (PDF)
@@ -1848,6 +1940,24 @@
         const lnb = document.getElementById("lnb");
         const pageContent = document.getElementById("page-content");
         const pages = Array.from(pageContent.children);
+        const reportModal = document.getElementById("report-modal");
+        const downloadReportBtn = document.getElementById(
+          "download-report-btn"
+        );
+        const closeReportBtn = document.getElementById("close-report-btn");
+        const printReportBtn = document.getElementById("print-report-btn");
+        const comprehensiveReportModal = document.getElementById(
+          "comprehensive-report-modal"
+        );
+        const comprehensiveReportBtn = document.getElementById(
+          "comprehensive-report-btn"
+        );
+        const closeComprehensiveReportBtn = document.getElementById(
+          "close-comprehensive-report-btn"
+        );
+        const printComprehensiveReportBtn = document.getElementById(
+          "print-comprehensive-report-btn"
+        );
 
         let chartInstances = {};
 
@@ -2234,9 +2344,338 @@
           });
         }
 
+        // --- Report Modal Logic ---
+        if (downloadReportBtn) {
+          downloadReportBtn.addEventListener("click", () => {
+            reportModal.classList.remove("hidden");
+            reportModal.classList.add("flex");
+            const reportChartCtx = document
+              .getElementById("reportChart")
+              ?.getContext("2d");
+            if (reportChartCtx) {
+              if (chartInstances.report) chartInstances.report.destroy();
+              chartInstances.report = new Chart(reportChartCtx, {
+                type: "line",
+                data: {
+                  labels: Array.from({ length: 31 }, (_, i) => i + 1),
+                  datasets: [
+                    {
+                      label: "Daily Average CO₂ (ppm)",
+                      data: Array.from(
+                        { length: 31 },
+                        () => 800 + Math.random() * 400
+                      ),
+                      borderColor: "rgba(59, 130, 246, 0.8)",
+                      backgroundColor: "rgba(59, 130, 246, 0.1)",
+                      fill: true,
+                      tension: 0.3,
+                    },
+                  ],
+                },
+                options: { responsive: true, maintainAspectRatio: false },
+              });
+            }
+          });
+        }
+
+        if (closeReportBtn) {
+          closeReportBtn.addEventListener("click", () => {
+            reportModal.classList.add("hidden");
+            reportModal.classList.remove("flex");
+          });
+        }
+
+        if (printReportBtn) {
+          printReportBtn.addEventListener("click", () => {
+            window.print();
+          });
+        }
+
+        // Close modal when clicking outside
+        if (reportModal) {
+          reportModal.addEventListener("click", (e) => {
+            if (e.target === reportModal) {
+              reportModal.classList.add("hidden");
+              reportModal.classList.remove("flex");
+            }
+          });
+        }
+
+        // --- Comprehensive Report Modal Logic ---
+        if (comprehensiveReportBtn) {
+          comprehensiveReportBtn.addEventListener("click", () => {
+            comprehensiveReportModal.classList.remove("hidden");
+            comprehensiveReportModal.classList.add("flex");
+            const comprehensiveChartCtx = document
+              .getElementById("comprehensiveReportChart")
+              ?.getContext("2d");
+            if (comprehensiveChartCtx) {
+              if (chartInstances.comprehensive)
+                chartInstances.comprehensive.destroy();
+              chartInstances.comprehensive = new Chart(comprehensiveChartCtx, {
+                type: "radar",
+                data: {
+                  labels: ["Safety", "Environment", "Access", "Attendance"],
+                  datasets: [
+                    {
+                      label: "Monthly Score (out of 100)",
+                      data: [85, 92, 95, 98.5],
+                      backgroundColor: "rgba(59, 130, 246, 0.2)",
+                      borderColor: "rgba(59, 130, 246, 1)",
+                      borderWidth: 1,
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    r: {
+                      beginAtZero: true,
+                      max: 100,
+                    },
+                  },
+                },
+              });
+            }
+          });
+        }
+
+        if (closeComprehensiveReportBtn) {
+          closeComprehensiveReportBtn.addEventListener("click", () => {
+            comprehensiveReportModal.classList.add("hidden");
+            comprehensiveReportModal.classList.remove("flex");
+          });
+        }
+
+        if (printComprehensiveReportBtn) {
+          printComprehensiveReportBtn.addEventListener("click", () => {
+            window.print();
+          });
+        }
+
+        // Close modal when clicking outside
+        if (comprehensiveReportModal) {
+          comprehensiveReportModal.addEventListener("click", (e) => {
+            if (e.target === comprehensiveReportModal) {
+              comprehensiveReportModal.classList.add("hidden");
+              comprehensiveReportModal.classList.remove("flex");
+            }
+          });
+        }
+
         // --- Initial Page Load ---
         showPage("dashboard");
       });
     </script>
+
+    <!-- Environment Report Modal -->
+    <div
+      id="report-modal"
+      class="modal-container fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center"
+    >
+      <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl">
+        <div
+          id="report-modal-header"
+          class="p-4 border-b flex justify-between items-center modal-header"
+        >
+          <h3 class="text-xl font-bold">Monthly Environment Report</h3>
+          <button
+            id="close-report-btn"
+            class="text-gray-500 hover:text-gray-800"
+          >
+            &times;
+          </button>
+        </div>
+        <div
+          id="report-modal-content"
+          class="p-8 max-h-[70vh] overflow-y-auto bg-white printable-area"
+        >
+          <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">
+              School Environment Monthly Report
+            </h1>
+            <p class="text-gray-500">July 2025</p>
+          </div>
+          <div class="grid grid-cols-3 gap-4 text-center mb-8">
+            <div class="p-4 bg-blue-50 rounded-lg">
+              <p class="text-sm text-blue-800 font-semibold">Avg. CO₂</p>
+              <p class="text-2xl font-bold">950 ppm</p>
+            </div>
+            <div class="p-4 bg-green-50 rounded-lg">
+              <p class="text-sm text-green-800 font-semibold">Avg. Temp</p>
+              <p class="text-2xl font-bold">24.8℃</p>
+            </div>
+            <div class="p-4 bg-yellow-50 rounded-lg">
+              <p class="text-sm text-yellow-800 font-semibold">Total Alerts</p>
+              <p class="text-2xl font-bold">18</p>
+            </div>
+          </div>
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">
+              Daily CO₂ Trend (Avg. of All Areas)
+            </h2>
+            <div class="h-64"><canvas id="reportChart"></canvas></div>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold mb-4">Detailed Data by Area</h2>
+            <table class="w-full text-sm text-left">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="p-2">Area</th>
+                  <th class="p-2">Avg. CO₂</th>
+                  <th class="p-2">Max CO₂</th>
+                  <th class="p-2">Avg. Temp</th>
+                  <th class="p-2">Alerts</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b">
+                  <td class="p-2 font-medium">Class 3-1</td>
+                  <td class="p-2">850 ppm</td>
+                  <td class="p-2">980 ppm</td>
+                  <td class="p-2">24.5℃</td>
+                  <td class="p-2">0</td>
+                </tr>
+                <tr class="border-b bg-yellow-50">
+                  <td class="p-2 font-medium">Class 3-2</td>
+                  <td class="p-2">1150 ppm</td>
+                  <td class="p-2">1300 ppm</td>
+                  <td class="p-2">26.1℃</td>
+                  <td class="p-2">12</td>
+                </tr>
+                <tr class="border-b bg-red-50">
+                  <td class="p-2 font-medium">Science Lab</td>
+                  <td class="p-2">980 ppm</td>
+                  <td class="p-2">1100 ppm</td>
+                  <td class="p-2">23.8℃</td>
+                  <td class="p-2">6 (PM2.5)</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="p-2 font-medium">Library</td>
+                  <td class="p-2">900 ppm</td>
+                  <td class="p-2">950 ppm</td>
+                  <td class="p-2">25.0℃</td>
+                  <td class="p-2">0</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-8">
+            <h2 class="text-xl font-semibold mb-4">
+              Summary & Recommendations
+            </h2>
+            <p class="text-sm text-gray-700">
+              Overall air quality was maintained at a good level, but Class 3-2
+              consistently showed high CO₂ levels during afternoon classes. It
+              is recommended to check the ventilation system of Class 3-2 and
+              reinforce periodic ventilation guidance.
+            </p>
+          </div>
+        </div>
+        <div
+          id="report-modal-footer"
+          class="p-4 border-t flex justify-end space-x-2 modal-footer"
+        >
+          <button
+            id="print-report-btn"
+            class="py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+          >
+            Print / Save as PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comprehensive Report Modal -->
+    <div
+      id="comprehensive-report-modal"
+      class="modal-container fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center"
+    >
+      <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl">
+        <div
+          id="comprehensive-report-modal-header"
+          class="p-4 border-b flex justify-between items-center modal-header"
+        >
+          <h3 class="text-xl font-bold">Comprehensive Monthly Report</h3>
+          <button
+            id="close-comprehensive-report-btn"
+            class="text-gray-500 hover:text-gray-800"
+          >
+            &times;
+          </button>
+        </div>
+        <div
+          id="comprehensive-report-modal-content"
+          class="p-8 max-h-[70vh] overflow-y-auto bg-white printable-area"
+        >
+          <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">
+              Comprehensive School Report
+            </h1>
+            <p class="text-gray-500">July 2025</p>
+          </div>
+          <div class="grid grid-cols-2 gap-8 mb-8">
+            <div>
+              <h2 class="text-xl font-semibold mb-4">Monthly Event Summary</h2>
+              <div class="h-64">
+                <canvas id="comprehensiveReportChart"></canvas>
+              </div>
+            </div>
+            <div>
+              <h2 class="text-xl font-semibold mb-4">Key Metrics</h2>
+              <div class="space-y-4">
+                <div class="p-4 bg-red-50 rounded-lg">
+                  <p class="font-semibold text-red-800">Total Safety Alerts</p>
+                  <p class="text-2xl font-bold">28</p>
+                </div>
+                <div class="p-4 bg-yellow-50 rounded-lg">
+                  <p class="font-semibold text-yellow-800">
+                    Total Environment Alerts
+                  </p>
+                  <p class="text-2xl font-bold">55</p>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-lg">
+                  <p class="font-semibold text-gray-800">
+                    Unauthorized Access Attempts
+                  </p>
+                  <p class="text-2xl font-bold">11</p>
+                </div>
+                <div class="p-4 bg-blue-50 rounded-lg">
+                  <p class="font-semibold text-blue-800">
+                    Average Attendance Rate
+                  </p>
+                  <p class="text-2xl font-bold">98.5%</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-8">
+            <h2 class="text-xl font-semibold mb-4">
+              Overall Assessment & Recommendations
+            </h2>
+            <p class="text-sm text-gray-700">
+              The overall school management status for July is stable. However,
+              there has been a slight increase in safety alerts in the 2nd week,
+              requiring attention to hallway monitoring. Environmental alerts
+              are concentrated in specific classrooms, necessitating a
+              ventilation system check. Access control and attendance rates are
+              being managed well.
+            </p>
+          </div>
+        </div>
+        <div
+          id="comprehensive-report-modal-footer"
+          class="p-4 border-t flex justify-end space-x-2 modal-footer"
+        >
+          <button
+            id="print-comprehensive-report-btn"
+            class="py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+          >
+            Print / Save as PDF
+          </button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
