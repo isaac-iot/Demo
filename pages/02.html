@@ -1,0 +1,2573 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 펌프카 통합 관제 대시보드</title>
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="./custom-styles.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <!-- Leaflet.js for Map -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <style>
+      @font-face {
+        font-family: "SUIT-Regular";
+        src: url("../SUIT-Regular.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      body {
+        font-family: "SUIT-Regular", -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, sans-serif;
+        font-weight: 400;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      /* 스크롤바 스타일링 */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+      #sidebar {
+        transition: transform 0.3s ease-in-out, margin-left 0.3s ease-in-out;
+        transform: translateX(0);
+        width: 280px;
+        flex-shrink: 0;
+      }
+
+      #sidebar.sidebar-closed {
+        transform: translateX(-100%);
+        margin-left: -280px;
+      }
+
+      /* Main content transition for smooth adjustment */
+      .main-content {
+        transition: margin-left 0.3s ease-in-out;
+      }
+
+      /* Prevent layout shift on hover by removing font-weight change */
+      .no-layout-shift {
+        position: relative;
+      }
+      .no-layout-shift::after {
+        content: attr(data-text);
+        font-weight: bold;
+        position: absolute;
+        left: 0;
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      /* Sidebar Item Styles from user request */
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem; /* gap-x-3 */
+        cursor: pointer;
+        color: #000000; /* text-black */
+        transition: background-color 0.2s, color 0.2s;
+        font-weight: 500;
+      }
+      .active-sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        background-color: #e5f1ff;
+        color: #0075ff;
+        font-weight: 500;
+      }
+      /* Submenu items inside accordion - smaller font and consistent height */
+      .accordion-content .sidebar-item,
+      .accordion-content .active-sidebar-item {
+        font-size: 14px;
+        padding: 12px;
+        min-height: 48px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+        border-radius: 0.375rem;
+      }
+      /* Accordion animation */
+      .accordion-content {
+        overflow: hidden;
+        transition: max-height 0.3s ease-in-out;
+      }
+      .truck-item.active {
+        border-width: 2px;
+        border-color: #3b82f6; /* border-blue-500 */
+        background-color: #eff6ff; /* bg-blue-50 */
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      .leaflet-popup-content-wrapper {
+        border-radius: 8px;
+      }
+      .tab-button.active {
+        border-color: #3b82f6;
+        color: #3b82f6;
+        background-color: #eff6ff;
+      }
+      .boom-section {
+        transition: fill 0.3s ease-in-out;
+      }
+      .boom-section.danger {
+        fill: #ef4444; /* red-500 */
+        animation: blink 1s infinite;
+      }
+      @keyframes blink {
+        50% {
+          opacity: 0.5;
+        }
+      }
+      /* 시스템 아키텍처 다이어그램 스타일 */
+      .arch-box {
+        border: 1px solid #d1d5db;
+        background-color: #f9fafb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        text-align: center;
+      }
+      .arch-layer {
+        border: 2px dashed #9ca3af;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+      .arch-arrow {
+        position: relative;
+        height: 40px;
+      }
+      .arch-arrow::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 10px;
+        width: 2px;
+        height: 20px;
+        background-color: #6b7280;
+      }
+      .arch-arrow.down::after {
+        bottom: 10px;
+        top: auto;
+      }
+      .arch-arrow.down::before {
+        content: "";
+        position: absolute;
+        left: calc(50% - 4px);
+        bottom: 10px;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 5px solid #6b7280;
+      }
+    </style>
+  </head>
+  <body class="bg-[#f8f8f8]">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 bg-white border-b shadow-2 z-50">
+      <div
+        class="max-h-16 overflow-hidden ease flex w-full flex-col justify-start px-5 transition-[max-height] duration-150 sm:flex-row sm:items-center sm:justify-between sm:overflow-visible sm:border-none"
+      >
+        <div class="my-auto flex min-h-16 items-center gap-3 sm:gap-4">
+          <button
+            id="sidebar-toggle-btn"
+            aria-controls="sidebar"
+            class="stroke-grayscale-200"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 32 32"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              class="aspect-square w-6 shrink-0"
+            >
+              <path
+                id="sidebar-toggle-icon-close"
+                d="M20 24L12 16L20 8"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ></path>
+              <path
+                id="sidebar-toggle-icon-open"
+                d="M6 8H26M6 16H26M6 24H26"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="hidden"
+              ></path>
+            </svg>
+          </button>
+          <a class="block" href="#/">
+            <img
+              src="../assets/logo-nav.png"
+              alt="Logo"
+              class="max-h-16 w-auto"
+            />
+          </a>
+          <div
+            class="hidden line-clamp-1 w-fit whitespace-nowrap text-2xl font-bold text-gray-800"
+          >
+            AI 펌프카 통합 관제 대시보드
+          </div>
+        </div>
+        <ul
+          class="relative z-50 my-auto flex min-h-16 w-full justify-center gap-2 sm:border-none"
+        >
+          <div
+            class="flex flex-1 items-center gap-3 whitespace-nowrap text-base text-gray-700 max-sm:flex-wrap"
+          >
+            <nav
+              aria-label="Main"
+              data-orientation="horizontal"
+              dir="ltr"
+              class="relative z-10 flex flex-1 items-center w-full max-w-full justify-evenly sm:justify-end"
+            >
+              <div style="position: relative gap-y-1">
+                <ul
+                  data-orientation="horizontal"
+                  class="group flex flex-1 list-none items-center justify-center space-x-1"
+                  dir="ltr"
+                >
+                  <li class="flex flex-1 justify-center">
+                    <button
+                      class="group inline-flex items-center justify-center rounded-md py-2 transition-colors hover:bg-transparent hover:text-accent-foreground focus:bg-transparent focus:text-accent-foreground focus:outline-none disabled:opacity-50 data-[active]:bg-transparent date-[active]:text-primary data-[state=open]:bg-transparent group group h-13 w-full px-0 text-lg font-bold disabled:pointer-events-auto disabled:cursor-not-allowed disabled:text-gray-500"
+                    >
+                      <div>
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-6 w-6 group-data-[state=open]:text-primary"
+                        >
+                          <path
+                            d="M7 21L3 17L7 13"
+                            stroke="#0f172a"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          ></path>
+                          <path
+                            d="M17 17H3"
+                            stroke="#0f172a"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          ></path>
+                          <path
+                            d="M17 3L21 7L17 11"
+                            stroke="#0f172a"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          ></path>
+                          <path
+                            d="M7 7H21"
+                            stroke="#0f172a"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          ></path>
+                        </svg>
+                      </div>
+                    </button>
+                  </li>
+                  <li>
+                    <div
+                      class="mx-2 my-auto h-3 w-px shrink-0 bg-grayscale-600"
+                    ></div>
+                  </li>
+                  <li class="flex flex-1 justify-center">
+                    <button
+                      class="group inline-flex items-center justify-center rounded-md py-2 font-medium transition-colors hover:bg-transparent hover:text-accent-foreground focus:bg-transparent focus:text-accent-foreground focus:outline-none disabled:opacity-50 data-[active]:bg-transparent date-[active]:text-primary data-[state=open]:bg-transparent group group h-13 w-full bg-white px-0 text-lg disabled:pointer-events-auto disabled:cursor-not-allowed disabled:text-gray-500"
+                    >
+                      <div class="flex items-center gap-1.5">
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-6 w-6 group-data-[state=open]:text-primary"
+                        >
+                          <path
+                            d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
+                            stroke="#0f172a"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          ></path>
+                          <path
+                            d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"
+                            stroke="#0f172a"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          ></path>
+                        </svg>
+                        <div
+                          class="my-auto hidden text-grayscale-300 group-data-[state=open]:text-primary sm:flex no-layout-shift"
+                          data-text="admin"
+                        >
+                          admin
+                        </div>
+                      </div>
+                    </button>
+                  </li>
+                </ul>
+              </div>
+              <div
+                class="absolute left-auto top-full flex justify-center right-auto sm:-right-4 lg:-right-5"
+              ></div>
+            </nav>
+          </div>
+        </ul>
+      </div>
+    </header>
+
+    <div class="flex h-screen pt-16">
+      <!-- New Sidebar -->
+      <aside
+        id="sidebar"
+        class="z-40 bg-white shadow-lg rounded-2xl ml-5 my-5 border border-solid border-grayscale-700"
+      >
+        <div class="no-scrollbar flex flex-col h-full overflow-y-auto">
+        <nav id="lnb" class="p-4 text-lg font-medium">
+          <ul class="flex flex-col gap-1.5 mt-[1px]">
+            <li class="py-[2px]">
+              <div
+                id="nav-dashboard"
+                data-page-id="dashboard"
+                title="대시보드"
+                class="active-sidebar-item"
+              >
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"
+                  ></path>
+                  <path
+                    d="M9 22V14H15V22"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  ></path>
+                </svg>
+                <span class="flex-grow truncate leading-[22px]"
+                  >대시보드</span
+                >
+              </div>
+            </li>
+            <li class="py-[2px]">
+              <div
+                id="nav-live-control"
+                data-page-id="live-control"
+                title="실시간 관제"
+                class="sidebar-item"
+              >
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M17.218 10.395l-5.138-2.202a1 1 0 00-1.16 0l-5.138 2.202a1 1 0 00-.582.91v5.39a1 1 0 00.582.91l5.138 2.202a1 1 0 001.16 0l5.138-2.202a1 1 0 00.582-.91v-5.39a1 1 0 00-.582-.91z"
+                  ></path>
+                  <path d="M12 22v-4"></path>
+                  <path d="M12 8V2"></path>
+                  <path d="M4 12H2"></path>
+                  <path d="M22 12h-2"></path>
+                  <path d="M15.5 15.5l1.414 1.414"></path>
+                  <path d="M7.086 7.086l1.414 1.414"></path>
+                  <path d="M15.5 8.5l1.414-1.414"></path>
+                  <path d="M7.086 16.914l1.414-1.414"></path>
+                </svg>
+                <span class="flex-grow truncate leading-[22px]"
+                  >실시간 관제</span
+                >
+              </div>
+            </li>
+            <li class="py-[2px]">
+              <div
+                id="nav-boom-health"
+                data-page-id="boom-health"
+                title="붐 건전성 모니터링"
+                class="sidebar-item"
+              >
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                  ></path>
+                </svg>
+                <span class="flex-grow truncate leading-[22px]">붐 건전성 모니터링</span>
+              </div>
+            </li>
+            <li class="py-[2px]">
+              <div class="w-full">
+                <button
+                  type="button"
+                  id="accordion-ai-analysis"
+                  aria-controls="ai-analysis-submenu"
+                  aria-expanded="false"
+                  data-state="closed"
+                  class="flex flex-1 items-center justify-between font-medium transition-all w-full sidebar-item p-0 rounded-lg"
+                >
+                  <div
+                    title="AI 분석"
+                    class="flex items-center gap-3 w-full px-4 py-3 cursor-pointer"
+                  >
+                    <svg
+                      class="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      ></path>
+                    </svg>
+                    <span class="flex-grow text-left truncate leading-[22px]">AI 분석</span>
+                  </div>
+                  <svg
+                    class="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 mr-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    ></path>
+                  </svg>
+                </button>
+                <div
+                  id="ai-analysis-submenu"
+                  role="region"
+                  class="accordion-content pl-8"
+                  style="max-height: 0px"
+                >
+                  <ul class="flex flex-col gap-1.5 py-2">
+                    <li class="py-[2px]">
+                      <div
+                        id="nav-predictive-maintenance"
+                        data-page-id="predictive-maintenance"
+                        class="sidebar-item text-base"
+                      >
+                        예지보전 분석
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </li>
+            <li class="py-[2px]">
+              <div
+                id="nav-history"
+                data-page-id="history"
+                title="운행/정비 이력"
+                class="sidebar-item"
+              >
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                <span class="flex-grow truncate leading-[22px]">운행/정비 이력</span>
+              </div>
+            </li>
+            <li class="py-[2px]">
+              <div
+                id="nav-management"
+                data-page-id="management"
+                title="장비 관리"
+                class="sidebar-item"
+              >
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                  ></path>
+                </svg>
+                <span class="flex-grow truncate leading-[22px]">장비 관리</span>
+              </div>
+            </li>
+            <li class="py-[2px]">
+              <div
+                id="nav-report"
+                data-page-id="report"
+                title="AI 리포트"
+                class="sidebar-item"
+              >
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  ></path>
+                </svg>
+                <span class="flex-grow truncate leading-[22px]">AI 리포트</span>
+              </div>
+            </li>
+            <li class="py-[2px]">
+              <div
+                id="nav-system-architecture"
+                data-page-id="system-architecture"
+                title="시스템 아키텍처"
+                class="sidebar-item"
+              >
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                  ></path>
+                </svg>
+                <span class="flex-grow truncate leading-[22px]">시스템 아키텍처</span>
+              </div>
+            </li>
+        </nav>
+      </aside>
+
+      <!-- 메인 컨텐츠 영역 -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+
+        <main class="flex-1 p-6 overflow-y-auto">
+          <!-- 페이지 컨테이너 -->
+          <div id="page-content">
+            <!-- 대시보드 페이지 -->
+            <div id="dashboard-page" class="hidden">
+              <!-- 페이지 제목 -->
+              <div class="mb-6">
+                <h2 class="text-[30px] font-bold text-gray-800">
+                  AI 펌프카 통합 관제 대시보드
+                </h2>
+                <p class="text-sm text-gray-500">
+                  전체 펌프카 장비의 운행 및 안전 상태를 한눈에 파악합니다.
+                </p>
+              </div>
+              <!-- KPI 요약 -->
+              <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <div class="p-5 bg-white rounded-lg shadow">
+                  <div class="flex items-center">
+                    <div class="p-3 bg-blue-100 rounded-full">
+                      <svg
+                        class="w-6 h-6 text-blue-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.657 7.343A8 8 0 0117.657 18.657z"
+                        ></path>
+                      </svg>
+                    </div>
+                    <div class="ml-4">
+                      <p class="text-sm font-medium text-gray-500">
+                        총 등록 장비
+                      </p>
+                      <p class="text-2xl font-bold text-gray-800">
+                        58 <span class="text-sm font-normal">대</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="p-5 bg-white rounded-lg shadow">
+                  <div class="flex items-center">
+                    <div class="p-3 bg-green-100 rounded-full">
+                      <svg
+                        class="w-6 h-6 text-green-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                      </svg>
+                    </div>
+                    <div class="ml-4">
+                      <p class="text-sm font-medium text-gray-500">
+                        현재 운행 중
+                      </p>
+                      <p class="text-2xl font-bold text-gray-800">
+                        45 <span class="text-sm font-normal">대</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="p-5 bg-white rounded-lg shadow">
+                  <div class="flex items-center">
+                    <div class="p-3 bg-yellow-100 rounded-full">
+                      <svg
+                        class="w-6 h-6 text-yellow-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                        ></path>
+                      </svg>
+                    </div>
+                    <div class="ml-4">
+                      <p class="text-sm font-medium text-gray-500">
+                        주의/경고 발생
+                      </p>
+                      <p class="text-2xl font-bold text-gray-800">
+                        8 <span class="text-sm font-normal">건</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="p-5 bg-white rounded-lg shadow">
+                  <div class="flex items-center">
+                    <div class="p-3 bg-red-100 rounded-full">
+                      <svg
+                        class="w-6 h-6 text-red-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                        ></path>
+                      </svg>
+                    </div>
+                    <div class="ml-4">
+                      <p class="text-sm font-medium text-gray-500">
+                        금일 고장 발생
+                      </p>
+                      <p class="text-2xl font-bold text-gray-800">
+                        1 <span class="text-sm font-normal">건</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 메인 컨텐츠 그리드 -->
+              <div class="grid grid-cols-1 gap-6 mt-6 lg:grid-cols-3">
+                <!-- 펌프카 운행 현황 맵 -->
+                <div class="lg:col-span-2 p-6 bg-white rounded-lg shadow">
+                  <h3 class="text-lg font-semibold text-gray-800">
+                    실시간 운행 현황
+                  </h3>
+                  <div
+                    id="map"
+                    class="relative mt-4 h-96 bg-gray-200 rounded-lg z-0"
+                  ></div>
+                </div>
+                <!-- 이벤트 로그 리스트 -->
+                <div class="p-6 bg-white rounded-lg shadow">
+                  <h3 class="text-lg font-semibold text-gray-800">
+                    실시간 이벤트 로그
+                  </h3>
+                  <div class="mt-4 space-y-4 overflow-y-auto h-96">
+                    <div class="flex items-start p-3 bg-red-50 rounded-lg">
+                      <div
+                        class="w-3 h-3 mt-1 bg-red-500 rounded-full flex-shrink-0"
+                      ></div>
+                      <div class="ml-3">
+                        <p class="text-sm font-semibold text-red-800">
+                          [고장] P-003 유압 시스템 과열
+                        </p>
+                        <p class="text-xs text-gray-500">방금 전</p>
+                      </div>
+                    </div>
+                    <div class="flex items-start p-3 bg-yellow-50 rounded-lg">
+                      <div
+                        class="w-3 h-3 mt-1 bg-yellow-500 rounded-full flex-shrink-0"
+                      ></div>
+                      <div class="ml-3">
+                        <p class="text-sm font-semibold text-yellow-800">
+                          [주의] P-015 붐 압력 과부하
+                        </p>
+                        <p class="text-xs text-gray-500">5분 전</p>
+                      </div>
+                    </div>
+                    <div class="flex items-start p-3 bg-yellow-50 rounded-lg">
+                      <div
+                        class="w-3 h-3 mt-1 bg-yellow-500 rounded-full flex-shrink-0"
+                      ></div>
+                      <div class="ml-3">
+                        <p class="text-sm font-semibold text-yellow-800">
+                          [주의] P-015 붐 진동 패턴 이상
+                        </p>
+                        <p class="text-xs text-gray-500">30분 전</p>
+                      </div>
+                    </div>
+                    <div class="flex items-start p-3 bg-blue-50 rounded-lg">
+                      <div
+                        class="w-3 h-3 mt-1 bg-blue-500 rounded-full flex-shrink-0"
+                      ></div>
+                      <div class="ml-3">
+                        <p class="text-sm font-semibold text-blue-800">
+                          [정보] P-021 정비 완료
+                        </p>
+                        <p class="text-xs text-gray-500">1시간 전</p>
+                      </div>
+                    </div>
+                    <div class="flex items-start p-3 bg-gray-50 rounded-lg">
+                      <div
+                        class="w-3 h-3 mt-1 bg-gray-500 rounded-full flex-shrink-0"
+                      ></div>
+                      <div class="ml-3">
+                        <p class="text-sm font-semibold text-gray-800">
+                          [정보] P-008 운행 시작
+                        </p>
+                        <p class="text-xs text-gray-500">3시간 전</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- 월별 이벤트 차트 -->
+              <div class="mt-6 p-6 bg-white rounded-lg shadow">
+                <h3 class="text-lg font-semibold text-gray-800">
+                  월별 이상 신호 발생 트렌드
+                </h3>
+                <div class="h-64 mt-4">
+                  <canvas id="monthlyEventChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- 실시간 관제 페이지 -->
+            <div id="live-control-page" class="hidden">
+              <!-- 페이지 제목 -->
+              <div class="mb-6">
+                <h2 class="text-[30px] font-bold text-gray-800">실시간 관제</h2>
+                <p class="text-sm text-gray-500">
+                  전체 펌프카의 실시간 운행 상태를 모니터링합니다.
+                </p>
+              </div>
+              <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Left Column: Truck List -->
+                <div class="lg:col-span-1 space-y-6">
+                  <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                      관제 대상 목록
+                    </h3>
+                    <div
+                      id="truck-list"
+                      class="mt-4 space-y-3 overflow-y-auto h-[calc(100vh-18rem)]"
+                    >
+                      <div
+                        class="truck-item p-4 rounded-lg border-2 border-red-500 bg-red-50 cursor-pointer"
+                        data-truck-id="P-003"
+                      >
+                        <div class="flex justify-between items-center">
+                          <p class="font-bold text-red-700">P-003</p>
+                          <span
+                            class="text-xs font-semibold text-white bg-red-500 px-2 py-1 rounded-full"
+                            >고장</span
+                          >
+                        </div>
+                        <p class="text-sm text-grayscale-200">서울 강남 현장</p>
+                      </div>
+                      <div
+                        class="truck-item p-4 rounded-lg border bg-yellow-50 cursor-pointer active"
+                        data-truck-id="P-015"
+                      >
+                        <div class="flex justify-between items-center">
+                          <p class="font-bold text-yellow-700">P-015</p>
+                          <span
+                            class="text-xs font-semibold text-white bg-yellow-500 px-2 py-1 rounded-full"
+                            >주의</span
+                          >
+                        </div>
+                        <p class="text-sm text-grayscale-200">경기 판교 현장</p>
+                      </div>
+                      <div
+                        class="truck-item p-4 rounded-lg border bg-green-50 cursor-pointer"
+                        data-truck-id="P-008"
+                      >
+                        <div class="flex justify-between items-center">
+                          <p class="font-bold text-green-700">P-008</p>
+                          <span
+                            class="text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full"
+                            >정상</span
+                          >
+                        </div>
+                        <p class="text-sm text-grayscale-200">인천 송도 현장</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Right Column: Truck Details -->
+                <div
+                  id="truck-details"
+                  class="lg:col-span-3 bg-white p-6 rounded-lg shadow"
+                >
+                  <!-- JS로 세부 정보가 채워질 영역 -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 붐 건전성 모니터링 페이지 -->
+            <div id="boom-health-page" class="hidden">
+              <!-- 페이지 제목 -->
+              <div class="mb-6">
+                <h2 class="text-[30px] font-bold text-gray-800">붐 건전성 모니터링</h2>
+                <p class="text-sm text-gray-500">
+                  붐 장비의 건전성 상태를 실시간으로 모니터링하고 분석합니다.
+                </p>
+              </div>
+              <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Left Column: Boom Status List -->
+                <div class="lg:col-span-1 space-y-6">
+                  <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                      붐 상태 목록
+                    </h3>
+                    <div
+                      id="boom-truck-list"
+                      class="mt-4 space-y-3 overflow-y-auto h-[calc(100vh-18rem)]"
+                    >
+                      <div
+                        class="truck-item p-4 rounded-lg border-2 border-red-500 bg-red-50 cursor-pointer"
+                        data-truck-id="P-003"
+                      >
+                        <div class="flex justify-between items-center">
+                          <p class="font-bold text-red-700">P-003</p>
+                          <span
+                            class="text-xs font-semibold text-white bg-red-500 px-2 py-1 rounded-full"
+                            >균열의심</span
+                          >
+                        </div>
+                        <p class="text-sm text-grayscale-200">
+                          붐 피로도/균열 RUL: <span class="font-bold">5%</span>
+                        </p>
+                      </div>
+                      <div
+                        class="truck-item p-4 rounded-lg border bg-yellow-50 cursor-pointer active"
+                        data-truck-id="P-015"
+                      >
+                        <div class="flex justify-between items-center">
+                          <p class="font-bold text-yellow-700">P-015</p>
+                          <span
+                            class="text-xs font-semibold text-white bg-yellow-500 px-2 py-1 rounded-full"
+                            >압력주의</span
+                          >
+                        </div>
+                        <p class="text-sm text-grayscale-200">
+                          붐 피로도/균열 RUL: <span class="font-bold">65%</span>
+                        </p>
+                      </div>
+                      <div
+                        class="truck-item p-4 rounded-lg border bg-green-50 cursor-pointer"
+                        data-truck-id="P-008"
+                      >
+                        <div class="flex justify-between items-center">
+                          <p class="font-bold text-green-700">P-008</p>
+                          <span
+                            class="text-xs font-semibold text-white bg-green-500 px-2 py-1 rounded-full"
+                            >정상</span
+                          >
+                        </div>
+                        <p class="text-sm text-grayscale-200">
+                          붐 피로도/균열 RUL: <span class="font-bold">92%</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Right Column: Boom Details -->
+                <div
+                  id="boom-details"
+                  class="lg:col-span-3 bg-white p-6 rounded-lg shadow"
+                >
+                  <!-- JS로 세부 정보가 채워질 영역 -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 예지보전 분석 페이지 -->
+            <div id="predictive-maintenance-page" class="hidden">
+              <!-- 페이지 제목 -->
+              <div class="mb-6">
+                <h2 class="text-[30px] font-bold text-gray-800">예지보전 분석</h2>
+                <p class="text-sm text-gray-500">
+                  AI 기반으로 장비의 부품 수명을 예측하고 정비 계획을 수립합니다.
+                </p>
+              </div>
+              <div class="space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow">
+                  <h3 class="text-lg font-semibold text-gray-800">
+                    장비별 부품 수명 예측
+                  </h3>
+                  <div class="mt-4 overflow-x-auto">
+                    <table
+                      id="predictive-maintenance-table"
+                      class="w-full text-sm text-left text-gray-500"
+                    >
+                      <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                          <th scope="col" class="px-6 py-3">장비 ID</th>
+                          <th scope="col" class="px-6 py-3">핵심 부품</th>
+                          <th scope="col" class="px-6 py-3">현재 상태</th>
+                          <th scope="col" class="px-6 py-3">예상 교체 시기</th>
+                          <th scope="col" class="px-6 py-3">상세보기</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="bg-red-50 border-b hover:bg-red-100">
+                          <td class="px-6 py-4 font-bold">P-003</td>
+                          <td class="px-6 py-4">유압 펌프</td>
+                          <td class="px-6 py-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                              <div
+                                class="bg-red-600 h-2.5 rounded-full"
+                                style="width: 15%"
+                              ></div>
+                            </div>
+                            <span class="text-xs">15% (위험)</span>
+                          </td>
+                          <td class="px-6 py-4 font-semibold text-red-600">
+                            즉시 점검 필요
+                          </td>
+                          <td class="px-6 py-4">
+                            <a
+                              href="#"
+                              class="font-medium text-blue-600 hover:underline"
+                              data-part-id="P003-pump"
+                              >보기</a
+                            >
+                          </td>
+                        </tr>
+                        <tr class="bg-yellow-50 border-b hover:bg-yellow-100">
+                          <td class="px-6 py-4 font-bold">P-015</td>
+                          <td class="px-6 py-4">붐 실린더</td>
+                          <td class="px-6 py-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                              <div
+                                class="bg-yellow-400 h-2.5 rounded-full"
+                                style="width: 45%"
+                              ></div>
+                            </div>
+                            <span class="text-xs">45% (주의)</span>
+                          </td>
+                          <td class="px-6 py-4 font-semibold text-yellow-600">
+                            1개월 내
+                          </td>
+                          <td class="px-6 py-4">
+                            <a
+                              href="#"
+                              class="font-medium text-blue-600 hover:underline"
+                              data-part-id="P015-cylinder"
+                              >보기</a
+                            >
+                          </td>
+                        </tr>
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                          <td class="px-6 py-4 font-bold">P-008</td>
+                          <td class="px-6 py-4">엔진 오일</td>
+                          <td class="px-6 py-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                              <div
+                                class="bg-green-600 h-2.5 rounded-full"
+                                style="width: 85%"
+                              ></div>
+                            </div>
+                            <span class="text-xs">85% (양호)</span>
+                          </td>
+                          <td class="px-6 py-4">3개월 후</td>
+                          <td class="px-6 py-4">
+                            <a
+                              href="#"
+                              class="font-medium text-blue-600 hover:underline"
+                              data-part-id="P008-oil"
+                              >보기</a
+                            >
+                          </td>
+                        </tr>
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                          <td class="px-6 py-4 font-bold">P-021</td>
+                          <td class="px-6 py-4">타이어</td>
+                          <td class="px-6 py-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                              <div
+                                class="bg-green-600 h-2.5 rounded-full"
+                                style="width: 70%"
+                              ></div>
+                            </div>
+                            <span class="text-xs">70% (양호)</span>
+                          </td>
+                          <td class="px-6 py-4">2개월 후</td>
+                          <td class="px-6 py-4">
+                            <a
+                              href="#"
+                              class="font-medium text-blue-600 hover:underline"
+                              data-part-id="P021-tire"
+                              >보기</a
+                            >
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                      P-003 유압 압력 이상 신호 분석
+                    </h3>
+                    <div class="h-64 mt-4">
+                      <canvas id="pressureAnomalyChart"></canvas>
+                    </div>
+                  </div>
+                  <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                      P-015 붐 진동 주파수 분석
+                    </h3>
+                    <div class="h-64 mt-4">
+                      <canvas id="vibrationAnomalyChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="history-page" class="hidden">
+              <!-- 페이지 제목 -->
+              <div class="mb-6">
+                <h2 class="text-[30px] font-bold text-gray-800">운행/정비 이력</h2>
+                <p class="text-sm text-gray-500">
+                  펌프카의 운행 기록과 정비 이력을 조회하고 관리합니다.
+                </p>
+              </div>
+              <div class="space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow">
+                  <h3 class="text-lg font-semibold text-gray-800">이력 조회</h3>
+                  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                    <input type="date" class="p-2 border rounded-lg" />
+                    <input
+                      type="text"
+                      placeholder="장비 ID"
+                      class="p-2 border rounded-lg"
+                    />
+                    <select class="p-2 border rounded-lg">
+                      <option>유형 전체</option>
+                      <option>운행</option>
+                      <option>정비</option>
+                      <option>고장</option>
+                    </select>
+                    <button
+                      class="py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+                    >
+                      조회
+                    </button>
+                  </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                  <h3 class="text-lg font-semibold text-gray-800">
+                    운행 및 정비 로그
+                  </h3>
+                  <div class="mt-4 overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500">
+                      <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                          <th scope="col" class="px-6 py-3">시간</th>
+                          <th scope="col" class="px-6 py-3">장비 ID</th>
+                          <th scope="col" class="px-6 py-3">유형</th>
+                          <th scope="col" class="px-6 py-3">상세 내용</th>
+                          <th scope="col" class="px-6 py-3">위치</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="bg-red-50 border-b">
+                          <td class="px-6 py-4">2025-07-31 10:30</td>
+                          <td class="px-6 py-4 font-bold">P-003</td>
+                          <td class="px-6 py-4">
+                            <span
+                              class="px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full"
+                              >고장</span
+                            >
+                          </td>
+                          <td class="px-6 py-4">유압 시스템 과열 발생</td>
+                          <td class="px-6 py-4">서울 강남</td>
+                        </tr>
+                        <tr class="bg-white border-b">
+                          <td class="px-6 py-4">2025-07-31 09:00</td>
+                          <td class="px-6 py-4 font-bold">P-015</td>
+                          <td class="px-6 py-4">
+                            <span
+                              class="px-2 py-1 text-xs font-medium text-blue-800 bg-blue-100 rounded-full"
+                              >운행</span
+                            >
+                          </td>
+                          <td class="px-6 py-4">타설 작업 시작</td>
+                          <td class="px-6 py-4">경기 판교</td>
+                        </tr>
+                        <tr class="bg-white border-b">
+                          <td class="px-6 py-4">2025-07-30 14:00</td>
+                          <td class="px-6 py-4 font-bold">P-021</td>
+                          <td class="px-6 py-4">
+                            <span
+                              class="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full"
+                              >정비</span
+                            >
+                          </td>
+                          <td class="px-6 py-4">엔진 오일 교체 완료</td>
+                          <td class="px-6 py-4">본사 차고지</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="management-page" class="hidden">
+              <!-- 페이지 제목 -->
+              <div class="mb-6">
+                <h2 class="text-[30px] font-bold text-gray-800">장비 관리</h2>
+                <p class="text-sm text-gray-500">
+                  펌프카 장비 정보를 등록, 수정하고 전반적인 장비를 관리합니다.
+                </p>
+              </div>
+              <div class="space-y-6">
+                <div class="flex justify-between items-center">
+                  <h3 class="text-lg font-semibold text-gray-800">장비 관리</h3>
+                  <button
+                    class="py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+                  >
+                    신규 장비 등록
+                  </button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+                  <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                      <tr>
+                        <th class="px-6 py-3">장비 ID</th>
+                        <th class="px-6 py-3">모델</th>
+                        <th class="px-6 py-3">연식</th>
+                        <th class="px-6 py-3">상태</th>
+                        <th class="px-6 py-3">최근 정비일</th>
+                        <th class="px-6 py-3">관리</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="border-b">
+                        <td class="px-6 py-4 font-bold">P-003</td>
+                        <td class="px-6 py-4">KCP42ZX170</td>
+                        <td class="px-6 py-4">2021</td>
+                        <td class="px-6 py-4 text-red-600">고장</td>
+                        <td class="px-6 py-4">2025-06-15</td>
+                        <td class="px-6 py-4">
+                          <a href="#" class="text-blue-600 hover:underline"
+                            >수정</a
+                          >
+                        </td>
+                      </tr>
+                      <tr class="border-b">
+                        <td class="px-6 py-4 font-bold">P-008</td>
+                        <td class="px-6 py-4">DNCP43X-5</td>
+                        <td class="px-6 py-4">2022</td>
+                        <td class="px-6 py-4 text-green-600">운행중</td>
+                        <td class="px-6 py-4">2025-07-01</td>
+                        <td class="px-6 py-4">
+                          <a href="#" class="text-blue-600 hover:underline"
+                            >수정</a
+                          >
+                        </td>
+                      </tr>
+                      <tr class="border-b">
+                        <td class="px-6 py-4 font-bold">P-015</td>
+                        <td class="px-6 py-4">KCP42ZX170</td>
+                        <td class="px-6 py-4">2021</td>
+                        <td class="px-6 py-4 text-yellow-600">주의</td>
+                        <td class="px-6 py-4">2025-05-20</td>
+                        <td class="px-6 py-4">
+                          <a href="#" class="text-blue-600 hover:underline"
+                            >수정</a
+                          >
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div id="report-page" class="hidden">
+              <!-- 페이지 제목 -->
+              <div class="mb-6">
+                <h2 class="text-[30px] font-bold text-gray-800">AI 리포트</h2>
+                <p class="text-sm text-gray-500">
+                  AI 분석 기반 다양한 리포트를 생성하고 조회합니다.
+                </p>
+              </div>
+              <div class="mb-4 border-b border-gray-200">
+                <ul
+                  class="flex flex-wrap -mb-px text-sm font-medium text-center"
+                  id="report-tabs"
+                >
+                  <li class="mr-2">
+                    <button
+                      class="tab-button inline-block p-4 border-b-2 rounded-t-lg active"
+                      data-tab="report-generation"
+                    >
+                      AI 보고서 생성
+                    </button>
+                  </li>
+                  <li class="mr-2">
+                    <button
+                      class="tab-button inline-block p-4 border-b-2 rounded-t-lg"
+                      data-tab="risk-verification"
+                    >
+                      AI 리스크 및 검증
+                    </button>
+                  </li>
+                </ul>
+              </div>
+              <div id="report-content">
+                <div id="report-generation-tab" class="space-y-6">
+                  <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                      AI 보고서 생성
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                      <select id="report-type" class="p-2 border rounded-lg">
+                        <option value="safety">안전관리 보고서</option>
+                        <option value="equipment">장비관리 보고서</option>
+                      </select>
+                      <select id="report-period" class="p-2 border rounded-lg">
+                        <option value="daily">일간</option>
+                        <option value="weekly">주간</option>
+                        <option value="monthly">월간</option>
+                      </select>
+                      <input
+                        type="date"
+                        id="report-date"
+                        class="p-2 border rounded-lg col-span-1 md:col-span-1"
+                        value="2025-07-31"
+                      />
+                      <button
+                        id="generate-report-btn"
+                        class="py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 col-span-1 md:col-span-1"
+                      >
+                        보고서 생성
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    id="report-display-area"
+                    class="bg-white p-8 rounded-lg shadow min-h-[40rem]"
+                  >
+                    <div class="text-center text-gray-500">
+                      <svg
+                        class="mx-auto h-12 w-12 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          vector-effect="non-scaling-stroke"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h12.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+                        />
+                      </svg>
+                      <h3 class="mt-2 text-sm font-semibold text-gray-900">
+                        보고서를 생성해주세요.
+                      </h3>
+                      <p class="mt-1 text-sm text-gray-500">
+                        위에서 원하는 보고서 종류와 기간을 선택하고 '보고서
+                        생성' 버튼을 클릭하세요.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div id="risk-verification-tab" class="hidden space-y-6">
+                  <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                      AI 리스크 분석 및 검증 계획
+                    </h3>
+                    <p class="mt-1 text-sm text-grayscale-200">
+                      붐 경보 시스템의 안정성 확보를 위해 관리되는 주요 리스크
+                      및 검증 항목입니다.
+                    </p>
+                    <div class="mt-4 overflow-x-auto">
+                      <table class="w-full text-sm text-left text-gray-500">
+                        <thead
+                          class="text-xs text-gray-700 uppercase bg-gray-50"
+                        >
+                          <tr>
+                            <th scope="col" class="px-6 py-3">리스크 유형</th>
+                            <th scope="col" class="px-6 py-3">상세 내용</th>
+                            <th scope="col" class="px-6 py-3">
+                              검증을 위한 테스트 케이스
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr class="bg-white border-b">
+                            <td class="px-6 py-4 font-medium">센서 노이즈</td>
+                            <td class="px-6 py-4">
+                              붐 바운싱으로 인한 압력, 각도 센서 값의 채터링
+                            </td>
+                            <td class="px-6 py-4">
+                              실제 타설 조건에서 붐 전개/선회/기복 동작을
+                              반복하며 센서 데이터의 안정성 및 필터링 성능 검증
+                            </td>
+                          </tr>
+                          <tr class="bg-gray-50 border-b">
+                            <td class="px-6 py-4 font-medium">
+                              알고리즘 오작동
+                            </td>
+                            <td class="px-6 py-4">
+                              '동적 안전율' 알고리즘이 특정 작업에서 경고를
+                              과도하게 발생시키거나 미발생시키는 문제
+                            </td>
+                            <td class="px-6 py-4">
+                              연장호스 장착 상태에서 다양한 시나리오(수평 이동,
+                              급격한 기복)를 시뮬레이션하며 경보 로직의 정확도
+                              검증
+                            </td>
+                          </tr>
+                          <tr class="bg-white border-b">
+                            <td class="px-6 py-4 font-medium">내구성</td>
+                            <td class="px-6 py-4">
+                              혹서/혹한기, 우천, 분진 등 악조건에서 센서 및
+                              컨트롤러의 성능 저하 또는 고장
+                            </td>
+                            <td class="px-6 py-4">
+                              환경 챔버 테스트(온/습도) 및 방수/방진(IP 등급)
+                              테스트, 실차 장착 후 장기 내구성 테스트 수행
+                            </td>
+                          </tr>
+                          <tr class="bg-gray-50 border-b">
+                            <td class="px-6 py-4 font-medium">특허 침해</td>
+                            <td class="px-6 py-4">
+                              압력 센서 이용 방식이 휴비스 특허와 유사할 가능성
+                            </td>
+                            <td class="px-6 py-4">
+                              HAWE 측 변리사 의견을 기반으로 특허 회피 설계가
+                              적용되었는지 코드 및 설계 리뷰, 필요시 외부 변리사
+                              크로스체크 의뢰
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 시스템 아키텍처 페이지 -->
+            <div id="system-architecture-page" class="hidden">
+              <!-- 페이지 제목 -->
+              <div class="mb-6">
+                <h2 class="text-[30px] font-bold text-gray-800">시스템 아키텍처</h2>
+                <p class="text-sm text-gray-500">
+                  붐 경보 시스템의 전체적인 구조와 구성 요소를 확인합니다.
+                </p>
+              </div>
+              <div class="bg-white p-8 rounded-lg shadow">
+                <!-- 하드웨어 계층 -->
+                <div class="arch-layer">
+                  <h3
+                    class="text-lg font-semibold text-center text-gray-700 mb-6"
+                  >
+                    하드웨어 계층 (Hardware Layer)
+                  </h3>
+                  <div class="grid grid-cols-3 gap-8 items-center">
+                    <!-- 입력 -->
+                    <div>
+                      <h4 class="font-bold text-center mb-4">입력 (Sensing)</h4>
+                      <div class="space-y-3">
+                        <div class="arch-box text-sm">
+                          붐 크랙 감지 센서 (전위차 방식)
+                        </div>
+                        <div class="arch-box text-sm">실린더 압력 센서</div>
+                        <div class="arch-box text-sm">붐 각도 센서</div>
+                        <div class="arch-box text-sm">붐 핀 로드셀 (보완)</div>
+                      </div>
+                    </div>
+                    <!-- 처리 -->
+                    <div class="flex flex-col items-center">
+                      <p class="text-sm text-gray-500 mb-2">CAN bus (J1939)</p>
+                      <svg
+                        width="100%"
+                        height="20"
+                        viewBox="0 0 200 20"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M0 10 L200 10"
+                          stroke="#6B7280"
+                          stroke-width="2"
+                          stroke-dasharray="4 4"
+                        />
+                        <path
+                          d="M195 5 L200 10 L195 15"
+                          stroke="#6B7280"
+                          stroke-width="2"
+                          fill="none"
+                        />
+                      </svg>
+                      <h4 class="font-bold text-center my-4">
+                        처리 (Processing)
+                      </h4>
+                      <div class="arch-box w-40">
+                        중앙 제어 장치 (Main Controller)
+                      </div>
+                      <svg
+                        width="100%"
+                        height="20"
+                        viewBox="0 0 200 20"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M0 10 L200 10"
+                          stroke="#6B7280"
+                          stroke-width="2"
+                          stroke-dasharray="4 4"
+                        />
+                        <path
+                          d="M195 5 L200 10 L195 15"
+                          stroke="#6B7280"
+                          stroke-width="2"
+                          fill="none"
+                        />
+                      </svg>
+                      <p class="text-sm text-gray-500 mt-2">
+                        Digital Out / CAN
+                      </p>
+                    </div>
+                    <!-- 출력 -->
+                    <div>
+                      <h4 class="font-bold text-center mb-4">
+                        출력 (Actuation & Display)
+                      </h4>
+                      <div class="space-y-3">
+                        <div class="arch-box text-sm">통합 디스플레이</div>
+                        <div class="arch-box text-sm">경고등 (LED) & 부저</div>
+                        <div class="arch-box text-sm">
+                          비상 정지 릴레이 (E-Stop)
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="arch-arrow down"></div>
+                <!-- 소프트웨어 계층 -->
+                <div class="arch-layer">
+                  <h3
+                    class="text-lg font-semibold text-center text-gray-700 mb-6"
+                  >
+                    소프트웨어 계층 (Software Layer on Controller)
+                  </h3>
+                  <div class="grid grid-cols-3 gap-6">
+                    <div class="arch-box">
+                      <h4 class="font-semibold mb-2">데이터 처리</h4>
+                      <p class="text-sm">센서 데이터 필터링</p>
+                      <p class="text-sm">데이터 퓨전 (압력+로드셀)</p>
+                    </div>
+                    <div class="arch-box">
+                      <h4 class="font-semibold mb-2">핵심 알고리즘</h4>
+                      <p class="text-sm">동적 안전율 계산</p>
+                      <p class="text-sm">붐 크랙 판정</p>
+                    </div>
+                    <div class="arch-box">
+                      <h4 class="font-semibold mb-2">제어 및 기타</h4>
+                      <p class="text-sm">상태 전이 기반 경보 로직</p>
+                      <p class="text-sm">자가 진단 및 데이터 로깅</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div
+      id="modal-container"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4"
+    >
+      <div
+        id="modal-content"
+        class="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 relative"
+      ></div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // --- 요소 ---
+        const lnb = document.getElementById("lnb");
+        const navLinks = lnb.querySelectorAll("[data-page-id]");
+        const pageContent = document.getElementById("page-content");
+        const pages = Array.from(pageContent.children);
+        const modalContainer = document.getElementById("modal-container");
+        const modalContent = document.getElementById("modal-content");
+
+        let chartInstances = {};
+        let mapInstance = null;
+        let modalChartInstance = null;
+
+        // --- Sidebar Toggle Logic ---
+        const sidebar = document.getElementById("sidebar");
+        const toggleBtn = document.getElementById("sidebar-toggle-btn");
+        const closeIcon = document.getElementById("sidebar-toggle-icon-close");
+        const openIcon = document.getElementById("sidebar-toggle-icon-open");
+
+        if (toggleBtn && sidebar && closeIcon && openIcon) {
+          toggleBtn.addEventListener("click", () => {
+            sidebar.classList.toggle("sidebar-closed");
+            closeIcon.classList.toggle("hidden");
+            openIcon.classList.toggle("hidden");
+          });
+        }
+
+        // --- 모달 로직 ---
+        function showModal(title, contentHTML, onShowCallback) {
+          if (modalChartInstance) {
+            modalChartInstance.destroy();
+            modalChartInstance = null;
+          }
+          modalContent.innerHTML = `
+                    <div class="flex justify-between items-center border-b pb-3 mb-4">
+                        <h3 class="text-xl font-bold">${title}</h3>
+                        <button id="modal-close-btn" class="text-gray-500 hover:text-gray-800">&times;</button>
+                    </div>
+                    <div>${contentHTML}</div>
+                `;
+          modalContainer.classList.remove("hidden");
+          document
+            .getElementById("modal-close-btn")
+            .addEventListener("click", hideModal);
+          if (onShowCallback) {
+            onShowCallback();
+          }
+        }
+
+        function hideModal() {
+          modalContainer.classList.add("hidden");
+          if (modalChartInstance) {
+            modalChartInstance.destroy();
+            modalChartInstance = null;
+          }
+        }
+
+        // --- 지도 초기화 ---
+        function initMap() {
+          if (mapInstance) {
+            mapInstance.remove();
+            mapInstance = null;
+          }
+
+          const mapElement = document.getElementById("map");
+          if (!mapElement || mapElement.offsetParent === null) return;
+
+          mapInstance = L.map("map").setView([37.5665, 126.978], 11); // 서울 중심
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution:
+              '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          }).addTo(mapInstance);
+
+          const truckLocations = {
+            "P-003": { lat: 37.5, lon: 127.05, status: "고장", color: "red" },
+            "P-015": { lat: 37.4, lon: 127.1, status: "주의", color: "yellow" },
+            "P-008": { lat: 37.45, lon: 126.7, status: "정상", color: "green" },
+          };
+
+          const icons = {
+            red: new L.Icon({
+              iconUrl:
+                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+              shadowUrl:
+                "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowSize: [41, 41],
+            }),
+            yellow: new L.Icon({
+              iconUrl:
+                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
+              shadowUrl:
+                "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowSize: [41, 41],
+            }),
+            green: new L.Icon({
+              iconUrl:
+                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+              shadowUrl:
+                "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowSize: [41, 41],
+            }),
+          };
+
+          for (const [id, data] of Object.entries(truckLocations)) {
+            L.marker([data.lat, data.lon], { icon: icons[data.color] })
+              .addTo(mapInstance)
+              .bindPopup(`<b>${id}</b><br>상태: ${data.status}`);
+          }
+        }
+
+        // --- 차트 렌더링 ---
+        function renderChartsForPage(pageId) {
+          Object.values(chartInstances).forEach((chart) => chart.destroy());
+          chartInstances = {};
+
+          if (pageId === "dashboard") {
+            initMap();
+            const monthlyEventCtx = document
+              .getElementById("monthlyEventChart")
+              ?.getContext("2d");
+            if (monthlyEventCtx) {
+              chartInstances.monthlyEvent = new Chart(monthlyEventCtx, {
+                type: "bar",
+                data: {
+                  labels: ["4월", "5월", "6월", "7월"],
+                  datasets: [
+                    {
+                      label: "장비 결함",
+                      data: [5, 8, 6, 9],
+                      backgroundColor: "rgba(239, 68, 68, 0.6)",
+                    },
+                    {
+                      label: "안전 수칙 위반",
+                      data: [12, 15, 10, 18],
+                      backgroundColor: "rgba(234, 179, 8, 0.6)",
+                    },
+                    {
+                      label: "소모품 교체",
+                      data: [20, 22, 15, 25],
+                      backgroundColor: "rgba(107, 114, 128, 0.6)",
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true },
+                  },
+                  plugins: { legend: { position: "top" } },
+                },
+              });
+            }
+          } else if (pageId === "boom-health") {
+            const boomPressureCtx = document
+              .getElementById("boomPressureChart")
+              ?.getContext("2d");
+            if (boomPressureCtx) {
+              const baseSafetyFactor = 220;
+              const dynamicFactor = () => 1 + Math.sin(Date.now() / 1000) * 0.1; // Simulate boom movement
+              const dynamicSafetyData = Array(7)
+                .fill(0)
+                .map(() => baseSafetyFactor * dynamicFactor());
+
+              chartInstances.boomPressure = new Chart(boomPressureCtx, {
+                type: "line",
+                data: {
+                  labels: [
+                    "-30s",
+                    "-25s",
+                    "-20s",
+                    "-15s",
+                    "-10s",
+                    "-5s",
+                    "Now",
+                  ],
+                  datasets: [
+                    {
+                      label: "AI 융합 하중 (보정값)",
+                      data: [180, 182, 250, 185, 190, 260, 180],
+                      borderColor: "rgb(34, 197, 94)",
+                      tension: 0.2,
+                      fill: true,
+                      backgroundColor: "rgba(34, 197, 94, 0.1)",
+                      borderWidth: 3,
+                    },
+                    {
+                      label: "동적 안전율 (실시간 계산)",
+                      data: dynamicSafetyData,
+                      borderColor: "rgb(234, 179, 8)",
+                      borderDash: [5, 5],
+                      pointRadius: 0,
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { position: "top" } },
+                },
+              });
+            }
+          } else if (pageId === "predictive-maintenance") {
+            const pressureCtx = document
+              .getElementById("pressureAnomalyChart")
+              ?.getContext("2d");
+            if (pressureCtx) {
+              chartInstances.pressure = new Chart(pressureCtx, {
+                type: "line",
+                data: {
+                  labels: [
+                    "10:00",
+                    "10:05",
+                    "10:10",
+                    "10:15",
+                    "10:20",
+                    "10:25",
+                    "10:30",
+                  ],
+                  datasets: [
+                    {
+                      label: "유압 압력 (bar)",
+                      data: [320, 322, 321, 355, 360, 325, 323],
+                      borderColor: "rgb(59, 130, 246)",
+                      tension: 0.2,
+                    },
+                    {
+                      label: "정상 범위 상한",
+                      data: [340, 340, 340, 340, 340, 340, 340],
+                      borderColor: "rgb(239, 68, 68)",
+                      borderDash: [5, 5],
+                      pointRadius: 0,
+                      fill: false,
+                    },
+                  ],
+                },
+                options: { responsive: true, maintainAspectRatio: false },
+              });
+            }
+            const vibrationCtx = document
+              .getElementById("vibrationAnomalyChart")
+              ?.getContext("2d");
+            if (vibrationCtx) {
+              chartInstances.vibration = new Chart(vibrationCtx, {
+                type: "line",
+                data: {
+                  labels: ["-5s", "-4s", "-3s", "-2s", "-1s", "Now"],
+                  datasets: [
+                    {
+                      label: "붐 진동 (Hz)",
+                      data: [5, 5.2, 8.1, 8.5, 5.3, 5.1],
+                      borderColor: "rgb(234, 179, 8)",
+                      tension: 0.4,
+                      fill: true,
+                      backgroundColor: "rgba(234, 179, 8, 0.1)",
+                    },
+                    {
+                      label: "주의 임계값",
+                      data: [8, 8, 8, 8, 8, 8],
+                      borderColor: "rgb(239, 68, 68)",
+                      borderDash: [5, 5],
+                      pointRadius: 0,
+                      fill: false,
+                    },
+                  ],
+                },
+                options: { responsive: true, maintainAspectRatio: false },
+              });
+            }
+          }
+        }
+
+        // --- 붐 건전성 페이지 데이터 및 로직 ---
+        const boomDetailsContainer = document.getElementById("boom-details");
+        const boomTruckData = {
+          "P-003": {
+            status: "균열의심",
+            color: "red",
+            rul: "5%",
+            analysis:
+              "2번 붐 섹션에서 저항값 이상 패턴이 지속적으로 감지되었습니다. 이는 미세 균열(Micro-crack)의 초기 신호일 수 있습니다. 즉각적인 운행 중단 및 정밀 비파괴 검사(NDT)가 필요합니다.",
+            crackSection: 2,
+            pressure: 255,
+            loadcell: 265,
+            fused: 260,
+          },
+          "P-015": {
+            status: "압력주의",
+            color: "yellow",
+            rul: "65%",
+            analysis:
+              "연장 호스 사용으로 추정되는 비정형 작업 중, 동적 안전율을 초과하는 압력 스파이크가 2회 감지되었습니다. 붐의 피로 누적도를 가속화할 수 있으므로 운전자에게 안전 수칙 준수 경고가 필요합니다.",
+            crackSection: null,
+            pressure: 240,
+            loadcell: 260,
+            fused: 250,
+          },
+          "P-008": {
+            status: "정상",
+            color: "green",
+            rul: "92%",
+            analysis:
+              "모든 붐 섹션의 압력 및 저항값이 정상 범위 내에 있습니다. 붐의 건전성 상태는 양호합니다.",
+            crackSection: null,
+            pressure: 175,
+            loadcell: 185,
+            fused: 180,
+          },
+        };
+
+        function updateBoomDetails(truckId) {
+          const data = boomTruckData[truckId];
+          if (!data || !boomDetailsContainer) return;
+
+          boomDetailsContainer.innerHTML = `
+                    <h3 class="text-lg font-semibold text-gray-800">붐 상세 정보: <span class="text-${data.color}-600 font-bold">${truckId}</span></h3>
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold">📈 실시간 붐 하중 분석</h4>
+                            <div class="mt-2 h-64"><canvas id="boomPressureChart"></canvas></div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">🔬 미세 균열 탐지 상태</h4>
+                            <div class="mt-2 p-4 bg-gray-50 rounded-lg flex justify-center items-center h-40">
+                                <svg id="boom-diagram" width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+                                    <g transform="translate(20, 180) rotate(-20)">
+                                        <rect class="boom-section" id="boom-1" x="0" y="-10" width="80" height="20" fill="#D1D5DB" stroke="#6B7280" />
+                                        <g transform="translate(80, 0)">
+                                            <rect class="boom-section" id="boom-2" x="0" y="-8" width="70" height="16" fill="#D1D5DB" stroke="#6B7280" />
+                                            <g transform="translate(70, 0) rotate(20)">
+                                                <rect class="boom-section" id="boom-3" x="0" y="-6" width="60" height="12" fill="#D1D5DB" stroke="#6B7280" />
+                                                <g transform="translate(60, 0) rotate(20)">
+                                                    <rect class="boom-section" id="boom-4" x="0" y="-4" width="50" height="8" fill="#D1D5DB" stroke="#6B7280" />
+                                                </g>
+                                            </g>
+                                        </g>
+                                    </g>
+                                    <text x="5" y="15" font-size="12">1단</text>
+                                    <text x="85" y="140" font-size="12">2단</text>
+                                    <text x="160" y="110" font-size="12">3단</text>
+                                    <text x="220" y="85" font-size="12">4단</text>
+                                </svg>
+                            </div>
+                             <div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+                                <div class="p-2 bg-blue-50 rounded"><p class="font-semibold">압력센서</p><p>${data.pressure} bar</p></div>
+                                <div class="p-2 bg-purple-50 rounded"><p class="font-semibold">로드셀</p><p>${data.loadcell} bar</p></div>
+                                <div class="p-2 bg-green-50 rounded"><p class="font-bold text-green-700">AI 융합 하중</p><p class="font-bold">${data.fused} bar</p></div>
+                            </div>
+                        </div>
+                        <div class="md:col-span-2">
+                             <h4 class="font-semibold">💡 AI 종합 분석 및 제안</h4>
+                             <div class="mt-2 p-4 bg-${data.color}-50 border border-${data.color}-200 rounded-lg">
+                                <p class="text-sm text-gray-800">${data.analysis}</p>
+                             </div>
+                        </div>
+                    </div>
+                `;
+
+          renderChartsForPage("boom-health");
+
+          if (data.crackSection) {
+            document
+              .getElementById(`boom-${data.crackSection}`)
+              .classList.add("danger");
+          }
+        }
+
+        // --- 실시간 관제 페이지 데이터 및 로직 ---
+        const truckDetailsContainer = document.getElementById("truck-details");
+        const truckData = {
+          "P-003": {
+            status: "고장",
+            color: "red",
+            location: "서울 강남 현장",
+            alertMessage: "유압 시스템 과열!",
+            sensors: {
+              "실린더 압력": "360 bar (과열)",
+              "엔진 온도": "95℃",
+              "붐 각도": "35°",
+              "유압유 온도": "85℃ (높음)",
+              "엔드부 하중": "550 kg (과부하)",
+              "붐 변형률": "2100 με (위험)",
+            },
+          },
+          "P-015": {
+            status: "주의",
+            color: "yellow",
+            location: "경기 판교 현장",
+            alertMessage: "붐 압력 과부하!",
+            sensors: {
+              "실린더 압력": "250 bar (높음)",
+              "엔진 온도": "88℃",
+              "붐 각도": "75°",
+              "유압유 온도": "65℃",
+              "엔드부 하중": "350 kg",
+              "붐 변형률": "1200 με (주의)",
+            },
+          },
+          "P-008": {
+            status: "정상",
+            color: "green",
+            location: "인천 송도 현장",
+            alertMessage: "모든 시스템 정상",
+            sensors: {
+              "실린더 압력": "180 bar",
+              "엔진 온도": "85℃",
+              "붐 각도": "60°",
+              "유압유 온도": "58℃",
+              "엔드부 하중": "120 kg",
+              "붐 변형률": "450 με",
+            },
+          },
+        };
+
+        function updateTruckDetails(truckId) {
+          const data = truckData[truckId];
+          if (!data || !truckDetailsContainer) return;
+
+          truckDetailsContainer.innerHTML = `
+                    <h3 class="text-lg font-semibold text-gray-800">장비 상세 정보: <span class="text-${data.color}-600 font-bold">${truckId}</span></h3>
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left Column -->
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="font-semibold">📋 장비 기본 정보</h4>
+                                <div class="mt-2 space-y-2 text-sm p-4 bg-gray-50 rounded-lg">
+                                    <p><strong>상태:</strong> <span class="font-bold text-${data.color}-600">${data.status}</span></p>
+                                    <p><strong>위치:</strong> ${data.location}</p>
+                                </div>
+                            </div>
+                             <div>
+                                <h4 class="font-semibold">⚙️ 원격 제어</h4>
+                                <div class="mt-2 space-y-3">
+                                    <button data-control="warn" data-truck-id="${truckId}" class="w-full py-2 px-4 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600">경고 메시지 전송</button>
+                                    <button data-control="stop" data-truck-id="${truckId}" class="w-full py-2 px-4 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700">긴급 정지 신호</button>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold">🚨 최근 알림 로그</h4>
+                                <div class="mt-2 space-y-2 text-sm p-4 bg-gray-50 rounded-lg h-32 overflow-y-auto">
+                                    <p>[10:30] ${data.alertMessage}</p>
+                                    <p>[10:28] 붐 각도 급격 변경</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Right Column -->
+                        <div>
+                            <h4 class="font-semibold">📊 실시간 센서 데이터</h4>
+                            <div class="mt-2 grid grid-cols-2 gap-4 text-center">
+                                <div class="p-3 bg-gray-50 rounded-lg"><p class="text-xs text-gray-500">실린더 압력</p><p class="text-md font-bold mt-1">${data.sensors["실린더 압력"]}</p></div>
+                                <div class="p-3 bg-gray-50 rounded-lg"><p class="text-xs text-gray-500">엔진 온도</p><p class="text-md font-bold mt-1">${data.sensors["엔진 온도"]}</p></div>
+                                <div class="p-3 bg-gray-50 rounded-lg"><p class="text-xs text-gray-500">붐 각도</p><p class="text-md font-bold mt-1">${data.sensors["붐 각도"]}</p></div>
+                                <div class="p-3 bg-gray-50 rounded-lg"><p class="text-xs text-gray-500">유압유 온도</p><p class="text-md font-bold mt-1">${data.sensors["유압유 온도"]}</p></div>
+                                <div class="p-3 bg-gray-50 rounded-lg"><p class="text-xs text-gray-500">엔드부 하중</p><p class="text-md font-bold mt-1">${data.sensors["엔드부 하중"]}</p></div>
+                                <div class="p-3 bg-gray-50 rounded-lg"><p class="text-xs text-gray-500">붐 변형률</p><p class="text-md font-bold mt-1">${data.sensors["붐 변형률"]}</p></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+        }
+
+        function showPage(pageId) {
+          hideModal();
+          pages.forEach((page) => {
+            if (page.id !== pageId + "-page") {
+              page.classList.add("hidden");
+            } else {
+              page.classList.remove("hidden");
+            }
+          });
+
+          navLinks.forEach((item) => {
+            // 부모 버튼 찾기 (아코디언 버튼인 경우)
+            const parentButton = item.closest('.accordion-content')?.previousElementSibling;
+            const isDirectItem = !parentButton;
+
+            if (item.dataset.pageId === pageId) {
+              item.classList.add("active-sidebar-item");
+              item.classList.remove("sidebar-item");
+              if (parentButton) {
+                parentButton.classList.add("active-sidebar-item");
+                parentButton.classList.remove("sidebar-item");
+                // 서브메뉴 열기
+                const subMenu = parentButton.nextElementSibling;
+                if (subMenu && subMenu.classList.contains('accordion-content')) {
+                  subMenu.style.maxHeight = subMenu.scrollHeight + "px";
+                  parentButton.setAttribute('aria-expanded', 'true');
+                  parentButton.setAttribute('data-state', 'open');
+                }
+              }
+            } else {
+              item.classList.remove("active-sidebar-item");
+              item.classList.add("sidebar-item");
+              if (parentButton) {
+                // 서브메뉴에서 active 항목이 있는지 확인
+                const subMenuHasActive = item.closest('.accordion-content')?.querySelector('.active-sidebar-item');
+                if (!subMenuHasActive) {
+                  parentButton.classList.remove("active-sidebar-item");
+                  parentButton.classList.add("sidebar-item");
+                  // 서브메뉴 닫기
+                  const subMenu = parentButton.nextElementSibling;
+                  if (subMenu && subMenu.classList.contains('accordion-content')) {
+                    subMenu.style.maxHeight = "0px";
+                    parentButton.setAttribute('aria-expanded', 'false');
+                    parentButton.setAttribute('data-state', 'closed');
+                  }
+                }
+              }
+            }
+          });
+
+          renderChartsForPage(pageId);
+
+          if (pageId === "live-control") {
+            updateTruckDetails("P-015");
+          } else if (pageId === "boom-health") {
+            updateBoomDetails("P-015");
+          }
+        }
+
+        // --- AI 리포트 페이지 로직 ---
+        const reportTabs = document.getElementById("report-tabs");
+        const reportGenerationTab = document.getElementById(
+          "report-generation-tab"
+        );
+        const riskVerificationTab = document.getElementById(
+          "risk-verification-tab"
+        );
+        if (reportTabs) {
+          reportTabs.addEventListener("click", (e) => {
+            const targetButton = e.target.closest(".tab-button");
+            if (!targetButton) return;
+
+            reportTabs
+              .querySelectorAll(".tab-button")
+              .forEach((btn) => btn.classList.remove("active"));
+            targetButton.classList.add("active");
+
+            if (targetButton.dataset.tab === "report-generation") {
+              reportGenerationTab.classList.remove("hidden");
+              riskVerificationTab.classList.add("hidden");
+            } else {
+              reportGenerationTab.classList.add("hidden");
+              riskVerificationTab.classList.remove("hidden");
+            }
+          });
+        }
+
+        const generateReportBtn = document.getElementById(
+          "generate-report-btn"
+        );
+        const reportDisplayArea = document.getElementById(
+          "report-display-area"
+        );
+
+        if (generateReportBtn) {
+          generateReportBtn.addEventListener("click", () => {
+            const reportType = document.getElementById("report-type").value;
+            const reportPeriod = document.getElementById("report-period").value;
+            const reportDate = document.getElementById("report-date").value;
+
+            reportDisplayArea.innerHTML = `<div class="text-center py-16">보고서를 생성 중입니다...</div>`;
+
+            // Simulate API call
+            setTimeout(() => {
+              let reportHTML = "";
+              if (reportType === "safety") {
+                reportHTML = generateSafetyReport(reportPeriod, reportDate);
+              } else {
+                reportHTML = generateEquipmentReport(reportPeriod, reportDate);
+              }
+              reportDisplayArea.innerHTML = reportHTML;
+
+              // Render charts inside the newly created report with slight delay for DOM stabilization
+              setTimeout(() => {
+                if (reportType === "safety") {
+                  const violationChartCtx = document
+                    .getElementById("reportViolationChart")
+                    ?.getContext("2d");
+                  if (violationChartCtx)
+                  new Chart(violationChartCtx, {
+                    type: "pie",
+                    data: {
+                      labels: ["운전자 부주의", "작업자 접근", "장비 결함"],
+                      datasets: [
+                        {
+                          data: [5, 3, 2],
+                          backgroundColor: ["#FBBF24", "#F87171", "#60A5FA"],
+                        },
+                      ],
+                    },
+                    options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      animation: {
+                        duration: 0
+                      },
+                      plugins: { 
+                        legend: { 
+                          position: "top",
+                          labels: {
+                            font: { size: 12 },
+                            padding: 15
+                          }
+                        } 
+                      },
+                    },
+                  });
+              } else {
+                const breakdownChartCtx = document
+                  .getElementById("reportBreakdownChart")
+                  ?.getContext("2d");
+                if (breakdownChartCtx)
+                  new Chart(breakdownChartCtx, {
+                    type: "bar",
+                    data: {
+                      labels: ["유압계", "엔진", "전기", "기타"],
+                      datasets: [
+                        {
+                          label: "고장 원인",
+                          data: [4, 1, 1, 2],
+                          backgroundColor: "#F87171",
+                        },
+                      ],
+                    },
+                    options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      animation: {
+                        duration: 0
+                      },
+                      plugins: { legend: { display: false } },
+                    },
+                  });
+                }
+              }, 100);
+            }, 1000);
+          });
+        }
+
+        function generateSafetyReport(period, date) {
+          const periodText = { daily: "일간", weekly: "주간", monthly: "월간" }[
+            period
+          ];
+          return `
+                    <div class="space-y-8">
+                        <div>
+                            <h2 class="text-2xl font-bold text-center">AI ${periodText} 안전관리 보고서</h2>
+                            <p class="text-center text-gray-500">기간: ${date}</p>
+                        </div>
+                        <div class="p-6 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 class="text-lg font-semibold text-blue-800">💡 AI 종합 분석 및 제안</h4>
+                            <p class="mt-2 text-gray-700">
+                                지난 ${periodText}, 총 10건의 안전 위반이 감지되었습니다. 특히 <strong>운전자 부주의(5건)</strong>가 가장 높은 비중을 차지했으며, P-003 장비의 김철수 운전자에게서 집중적으로 발생했습니다.
+                                <br><strong>조치 제안:</strong> 김철수 운전자에 대한 1:1 안전 교육 및 휴식 시간 관리 강화를 권고합니다. 또한 작업자 접근 경고가 잦은 판교 현장에 대한 추가 안전 펜스 설치를 고려해야 합니다.
+                            </p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="p-4 border rounded-lg">
+                                <h4 class="font-semibold text-center mb-2">위반 유형 분석</h4>
+                                <div class="h-48 w-full max-w-sm mx-auto" style="position: relative; width: 100%; height: 192px;"><canvas id="reportViolationChart" style="display: block; box-sizing: border-box; height: 192px; width: 100%;"></canvas></div>
+                            </div>
+                            <div class="p-4 border rounded-lg">
+                                <h4 class="font-semibold text-center mb-2">주요 위반 사항</h4>
+                                <ul class="space-y-2 text-sm">
+                                    <li class="p-2 bg-gray-50 rounded"><strong>P-003 (김철수):</strong> 운전자 졸음 감지 (3회)</li>
+                                    <li class="p-2 bg-gray-50 rounded"><strong>P-015 (이영희):</strong> 작업 반경 내 사람 접근 (2회)</li>
+                                    <li class="p-2 bg-gray-50 rounded"><strong>P-021 (최민호):</strong> 아웃트리거 지지 불량 (1회)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+        }
+
+        function generateEquipmentReport(period, date) {
+          const periodText = { daily: "일간", weekly: "주간", monthly: "월간" }[
+            period
+          ];
+          return `
+                    <div class="space-y-8">
+                        <div>
+                            <h2 class="text-2xl font-bold text-center">AI ${periodText} 장비관리 보고서</h2>
+                            <p class="text-center text-gray-500">기간: ${date}</p>
+                        </div>
+                        <div class="p-6 bg-green-50 border border-green-200 rounded-lg">
+                            <h4 class="text-lg font-semibold text-green-800">💡 AI 종합 분석 및 제안</h4>
+                            <p class="mt-2 text-gray-700">
+                                지난 ${periodText}, 총 8건의 장비 관련 이벤트가 발생했으며, 이 중 <strong>유압계 관련 고장(4건)</strong>이 가장 빈번했습니다. P-003의 유압 펌프는 수명이 15% 남아 즉각적인 조치가 필요합니다.
+                                <br><strong>조치 제안:</strong> P-003 장비의 운행을 중단하고 즉시 유압 펌프를 교체하십시오. 또한, 동일 모델(KCP42ZX170)인 P-015 장비에 대해서도 예방적 유압 시스템 점검을 권고합니다.
+                            </p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="p-4 border rounded-lg">
+                                <h4 class="font-semibold text-center mb-2">고장 원인 분석</h4>
+                                <div class="h-48" style="position: relative; width: 100%; height: 192px;"><canvas id="reportBreakdownChart" style="display: block; box-sizing: border-box; height: 192px; width: 100%;"></canvas></div>
+                            </div>
+                            <div class="p-4 border rounded-lg">
+                                <h4 class="font-semibold text-center mb-2">예지보전 알림</h4>
+                                <ul class="space-y-2 text-sm">
+                                    <li class="p-2 bg-red-50 rounded"><strong>P-003 (유압 펌프):</strong> 수명 15% 남음 (즉시 교체)</li>
+                                    <li class="p-2 bg-yellow-50 rounded"><strong>P-015 (붐 실린더):</strong> 수명 45% 남음 (1개월 내 점검)</li>
+                                    <li class="p-2 bg-green-50 rounded"><strong>P-008 (엔진 오일):</strong> 수명 85% 남음 (정상)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+        }
+
+        // --- 이벤트 리스너 ---
+        lnb.addEventListener("click", function (e) {
+          e.preventDefault();
+          
+          // 아코디언 버튼 클릭 처리 - 먼저 확인
+          const accordionBtn = e.target.closest("button[id^='accordion-']");
+          if (accordionBtn) {
+            const submenu = accordionBtn.nextElementSibling;
+            const isOpen = accordionBtn.getAttribute('aria-expanded') === 'true';
+            
+            if (isOpen) {
+              submenu.style.maxHeight = "0px";
+              accordionBtn.setAttribute('aria-expanded', 'false');
+              accordionBtn.setAttribute('data-state', 'closed');
+            } else {
+              submenu.style.maxHeight = submenu.scrollHeight + "px";
+              accordionBtn.setAttribute('aria-expanded', 'true');
+              accordionBtn.setAttribute('data-state', 'open');
+            }
+            return;
+          }
+          
+          // 일반 사이드바 아이템 클릭 처리
+          const targetItem = e.target.closest("[data-page-id]");
+          if (targetItem) {
+            const pageId = targetItem.dataset.pageId;
+            showPage(pageId);
+          }
+        });
+
+        // 아코디언 버튼 전용 이벤트 리스너 추가 (더 안정적인 작동을 위해)
+        const accordionBtn = document.getElementById("accordion-ai-analysis");
+        if (accordionBtn) {
+          accordionBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const submenu = document.getElementById("ai-analysis-submenu");
+            const isOpen = accordionBtn.getAttribute('aria-expanded') === 'true';
+            
+            if (isOpen) {
+              submenu.style.maxHeight = "0px";
+              accordionBtn.setAttribute('aria-expanded', 'false');
+              accordionBtn.setAttribute('data-state', 'closed');
+            } else {
+              submenu.style.maxHeight = submenu.scrollHeight + "px";
+              accordionBtn.setAttribute('aria-expanded', 'true');
+              accordionBtn.setAttribute('data-state', 'open');
+            }
+          });
+        }
+
+        const truckListContainer = document.getElementById("truck-list");
+        if (truckListContainer) {
+          truckListContainer.addEventListener("click", function (e) {
+            const targetItem = e.target.closest(".truck-item");
+            if (!targetItem) return;
+
+            truckListContainer
+              .querySelectorAll(".truck-item")
+              .forEach((item) => item.classList.remove("active"));
+            targetItem.classList.add("active");
+
+            const truckId = targetItem.dataset.truckId;
+            updateTruckDetails(truckId);
+          });
+        }
+
+        const boomTruckListContainer =
+          document.getElementById("boom-truck-list");
+        if (boomTruckListContainer) {
+          boomTruckListContainer.addEventListener("click", function (e) {
+            const targetItem = e.target.closest(".truck-item");
+            if (!targetItem) return;
+
+            boomTruckListContainer
+              .querySelectorAll(".truck-item")
+              .forEach((item) => item.classList.remove("active"));
+            targetItem.classList.add("active");
+
+            const truckId = targetItem.dataset.truckId;
+            updateBoomDetails(truckId);
+          });
+        }
+
+        // --- 관리 페이지 탭 로직 ---
+        const managementTabs = document.getElementById("management-tabs");
+        if (managementTabs) {
+          managementTabs.addEventListener("click", (e) => {
+            const targetButton = e.target.closest(".tab-button");
+            if (!targetButton) return;
+
+            managementTabs
+              .querySelectorAll(".tab-button")
+              .forEach((btn) => btn.classList.remove("active"));
+            targetButton.classList.add("active");
+
+            if (targetButton.dataset.tab === "equipment") {
+              document
+                .getElementById("equipment-tab")
+                .classList.remove("hidden");
+              document.getElementById("drivers-tab").classList.add("hidden");
+            } else {
+              document.getElementById("equipment-tab").classList.add("hidden");
+              document.getElementById("drivers-tab").classList.remove("hidden");
+            }
+          });
+        }
+
+        // --- 원격 제어 모달 (이벤트 위임) ---
+        document
+          .getElementById("page-content")
+          .addEventListener("click", (e) => {
+            const target = e.target.closest("button[data-control]");
+            if (!target) return;
+
+            const controlType = target.dataset.control;
+            const truckId = target.dataset.truckId;
+
+            if (controlType === "warn") {
+              const content = `
+                        <p class="mb-4"><strong>${truckId}</strong> 장비에 전송할 경고 메시지를 선택하세요.</p>
+                        <select class="w-full p-2 border rounded-lg">
+                            <option>과부하 작업 주의</option>
+                            <option>붐 급격 조작 주의</option>
+                            <option>장비 점검 필요</option>
+                        </select>
+                        <div class="flex justify-end mt-4">
+                            <button class="px-4 py-2 bg-gray-300 rounded-lg mr-2" onclick="document.getElementById('modal-container').classList.add('hidden')">취소</button>
+                            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg" onclick="alert('${truckId}에 메시지 전송 완료'); document.getElementById('modal-container').classList.add('hidden')">전송</button>
+                        </div>
+                    `;
+              showModal(`경고 메시지 전송 (${truckId})`, content);
+            } else if (controlType === "stop") {
+              const content = `
+                        <p class="mb-4"><strong>${truckId}</strong> 장비에 긴급 정지 신호를 보냅니다. 정말 실행하시겠습니까?</p>
+                        <p class="text-sm text-red-600">이 작업은 매우 위험할 수 있으며, 장비와 현장 상황을 완벽히 파악한 후에만 사용해야 합니다.</p>
+                        <div class="flex justify-end mt-4">
+                            <button class="px-4 py-2 bg-gray-300 rounded-lg mr-2" onclick="document.getElementById('modal-container').classList.add('hidden')">취소</button>
+                            <button class="px-4 py-2 bg-red-600 text-white rounded-lg" onclick="alert('${truckId}에 긴급 정지 신호 전송 완료'); document.getElementById('modal-container').classList.add('hidden')">실행</button>
+                        </div>
+                    `;
+              showModal(`긴급 정지 신호 확인 (${truckId})`, content);
+            }
+          });
+
+        // --- 예지보전 상세보기 모달 ---
+        const predictiveTable = document.getElementById(
+          "predictive-maintenance-table"
+        );
+        if (predictiveTable) {
+          const partDetailsData = {
+            "P003-pump": {
+              name: "유압 펌프 (P-003)",
+              details:
+                "최근 24시간 동안 압력 스파이크가 5회 감지되었습니다. 정상 범위를 초과하는 압력이 반복적으로 발생하여 펌프 내구도에 영향을 미쳤습니다.",
+              chartData: {
+                labels: ["-6h", "-5h", "-4h", "-3h", "-2h", "-1h", "Now"],
+                data: [320, 325, 350, 330, 355, 360, 323],
+              },
+            },
+            "P015-cylinder": {
+              name: "붐 실린더 (P-015)",
+              details:
+                "미세한 진동 주파수 패턴 변화가 감지되었습니다. 현재는 정상 범위 내에 있으나, 1개월 내 정밀 점검이 필요합니다.",
+              chartData: {
+                labels: ["-6h", "-5h", "-4h", "-3h", "-2h", "-1h", "Now"],
+                data: [5.0, 5.1, 5.0, 5.2, 5.3, 5.2, 5.4],
+              },
+            },
+            "P008-oil": {
+              name: "엔진 오일 (P-008)",
+              details:
+                "오일 점도 및 오염도 센서 데이터가 모두 정상 범위 내에 있습니다. 현재 상태 양호합니다.",
+              chartData: {
+                labels: ["-6h", "-5h", "-4h", "-3h", "-2h", "-1h", "Now"],
+                data: [98, 97, 97, 96, 95, 92, 90],
+              },
+            },
+            "P021-tire": {
+              name: "타이어 (P-021)",
+              details:
+                "타이어 공기압 및 마모도가 정상 범위 내에 있습니다. 다음 정기 점검 시 확인이 필요합니다.",
+              chartData: {
+                labels: ["-6h", "-5h", "-4h", "-3h", "-2h", "-1h", "Now"],
+                data: [75, 75, 74, 74, 73, 72, 71],
+              },
+            },
+          };
+
+          predictiveTable.addEventListener("click", (e) => {
+            e.preventDefault();
+            const target = e.target.closest("a[data-part-id]");
+            if (!target) return;
+
+            const partId = target.dataset.partId;
+            const data = partDetailsData[partId];
+            if (!data) return;
+
+            const content = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-semibold mb-2">상세 데이터 (지난 7시간)</h4>
+                                <div class="h-64"><canvas id="modal-chart"></canvas></div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-2">AI 분석 결과</h4>
+                                <p class="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg">${data.details}</p>
+                            </div>
+                        </div>
+                        <div class="flex justify-end mt-6">
+                            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg" onclick="document.getElementById('modal-container').classList.add('hidden')">닫기</button>
+                        </div>
+                    `;
+
+            showModal(`부품 상세 분석: ${data.name}`, content, () => {
+              const ctx = document
+                .getElementById("modal-chart")
+                .getContext("2d");
+              modalChartInstance = new Chart(ctx, {
+                type: "line",
+                data: {
+                  labels: data.chartData.labels,
+                  datasets: [
+                    {
+                      label: "센서 값",
+                      data: data.chartData.data,
+                      borderColor: "rgb(59, 130, 246)",
+                      tension: 0.1,
+                    },
+                  ],
+                },
+                options: { responsive: true, maintainAspectRatio: false },
+              });
+            });
+          });
+        }
+
+        // --- 초기 페이지 로드 ---
+        showPage("dashboard");
+      });
+    </script>
+  </body>
+</html>
