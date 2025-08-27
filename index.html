@@ -1,19 +1,235 @@
 <!-- index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ultivis - Demo</title>
+    <title>Ultivis - Demo Collection</title>
     <link rel="icon" type="image/x-icon" href="./assets/favicon.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+      @font-face {
+        font-family: "SUIT-Regular";
+        src: url("../SUIT-Regular.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      :root {
+        --color-primary: #0075ff;
+        --color-primary-10: #e5f1ff;
+        --color-primary-dark: #318fff;
+        --color-grayscale-100: #000000;
+        --color-grayscale-200: #333333;
+        --color-grayscale-300: #666666;
+        --color-grayscale-500: #cccccc;
+        --color-grayscale-700: #eeeeee;
+        --color-grayscale-800: #f5f5f5;
+        --color-grayscale-1000: #ffffff;
+        --shadow-card: 0px 1px 3px rgba(0, 0, 0, 0.12);
+        --radius-lg: 1rem;
+        --transition-normal: 0.3s ease-in-out;
+      }
+
+      body {
+        font-family: "SUIT-Regular", -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, sans-serif;
+        font-weight: 400;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        min-height: 100vh;
+      }
+
+      .demo-card {
+        background: var(--color-grayscale-1000);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-card);
+        border: 1px solid var(--color-grayscale-700);
+        transition: all var(--transition-normal);
+        overflow: hidden;
+      }
+
+      .demo-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .demo-link {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        height: 100%;
+      }
+
+      .demo-card-content {
+        padding: 1.5rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .demo-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--color-grayscale-200);
+        margin-bottom: 0.5rem;
+        line-height: 1.5;
+      }
+
+      .demo-description {
+        color: var(--color-grayscale-300);
+        font-size: 0.875rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+        flex-grow: 1;
+      }
+
+      .demo-badge {
+        display: inline-block;
+        background: var(--color-primary-10);
+        color: var(--color-primary);
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+      }
+
+      .hero-section {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
+
+      .hero-title {
+        font-size: 3rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 1rem;
+      }
+
+      .hero-subtitle {
+        font-size: 1.25rem;
+        color: var(--color-grayscale-300);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .grid-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .footer-note {
+        text-align: center;
+        color: var(--color-grayscale-300);
+        font-size: 0.875rem;
+        padding: 2rem;
+        border-top: 1px solid var(--color-grayscale-700);
+        background: var(--color-grayscale-1000);
+        border-radius: var(--radius-lg);
+        margin-top: 2rem;
+      }
+
+      @media (max-width: 640px) {
+        .hero-title {
+          font-size: 2rem;
+        }
+        
+        .grid-container {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        
+        .demo-card-content {
+          padding: 1.25rem;
+        }
+      }
+    </style>
   </head>
-  <body style="font-family: sans-serif; padding: 2rem">
-    <h1>Demo Pages</h1>
-    <ul>
-      <li><a href="./pages/01.html">Smart School Dashboard - EN</a></li>
-      <li><a href="./pages/02.html">AI 펌프카 통합 관제 대시보드 - KR</a></li>
-      <li><a href="./pages/03.html">AI 유압 브레이커 통합 관제 대시보드 - KR</a></li>
-      <!-- 나중에 추가될 데모도 여기에 링크 -->
-    </ul>
+  
+  <body class="p-6 md:p-8 lg:p-12">
+    <div class="max-w-6xl mx-auto">
+      <!-- Hero Section -->
+      <div class="hero-section">
+        <h1 class="hero-title">Ultivis Demo Collection</h1>
+        <p class="hero-subtitle">
+          다양한 AI 기반 대시보드와 관제 시스템의 데모를 확인해보세요.
+          실시간 모니터링부터 통합 관제까지 다양한 솔루션을 체험할 수 있습니다.
+        </p>
+      </div>
+
+      <!-- Demo Cards Grid -->
+      <div class="grid-container">
+        <!-- Demo 1: Smart School Dashboard -->
+        <div class="demo-card">
+          <a href="./pages/01.html" class="demo-link">
+            <div class="demo-card-content">
+              <div>
+                <h3 class="demo-title">Smart School Dashboard</h3>
+                <p class="demo-description">
+                  스마트 스쿨 통합 대시보드로 학교 시설의 전반적인 상태를 모니터링하고 관리할 수 있습니다. 실시간 센서 데이터, 에너지 사용량, 보안 시스템 등을 한눈에 확인하세요.
+                </p>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="demo-badge">English</span>
+                <span class="text-xs text-gray-400">Interactive Dashboard</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Demo 2: AI 펌프카 -->
+        <div class="demo-card">
+          <a href="./pages/02.html" class="demo-link">
+            <div class="demo-card-content">
+              <div>
+                <h3 class="demo-title">AI 펌프카 통합 관제 대시보드</h3>
+                <p class="demo-description">
+                  AI 기반 펌프카 관제 시스템으로 장비의 실시간 상태, 위치 정보, 작업 현황을 통합 모니터링합니다. 예측 분석을 통한 사전 점검과 효율적인 운영 관리가 가능합니다.
+                </p>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="demo-badge">한국어</span>
+                <span class="text-xs text-gray-400">Real-time Monitoring</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Demo 3: AI 유압 브레이커 -->
+        <div class="demo-card">
+          <a href="./pages/03.html" class="demo-link">
+            <div class="demo-card-content">
+              <div>
+                <h3 class="demo-title">AI 유압 브레이커 통합 관제 대시보드</h3>
+                <p class="demo-description">
+                  유압 브레이커 장비의 AI 기반 통합 관제 시스템입니다. 장비 상태 진단, 작업 효율성 분석, 유지보수 일정 관리 등 스마트한 장비 운영을 지원합니다.
+                </p>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="demo-badge">한국어</span>
+                <span class="text-xs text-gray-400">AI Analytics</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Footer Note -->
+      <div class="footer-note">
+        <p>💡 각 데모는 실제 운영 환경을 시뮬레이션한 샘플 데이터를 사용합니다.</p>
+        <p class="mt-2 text-xs">더 많은 데모가 곧 추가될 예정입니다.</p>
+      </div>
+    </div>
   </body>
 </html>
